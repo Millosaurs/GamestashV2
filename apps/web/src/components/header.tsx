@@ -8,8 +8,8 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
-  { name: "Market", href: "#link" },
-  { name: "Developers", href: "#link" },
+  { name: "Market", href: "/market" },
+  { name: "Developers", href: "/developers" },
   { name: "About", href: "#link" },
 ];
 
