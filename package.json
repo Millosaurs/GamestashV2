@@ -18,7 +18,11 @@
 		"db:generate": "turbo -F server db:generate",
 		"db:migrate": "turbo -F server db:migrate"
 	},
-	"dependencies": {},
+	"dependencies": {
+		"@orpc/client": "^1.8.5",
+		"@orpc/server": "^1.8.5",
+		"@orpc/tanstack-query": "^1.8.5"
+	},
 	"devDependencies": {
 		"turbo": "^2.5.4",
 		"oxlint": "^1.12.0"

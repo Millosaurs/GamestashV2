@@ -99,14 +99,6 @@ const SORT_OPTIONS = [
   { value: "popular", label: "Most Popular" },
 ];
 
-const PRICE_RANGES = [
-  { id: "free", label: "Free", min: 0, max: 0 },
-  { id: "under-10", label: "Under $10", min: 0.01, max: 9.99 },
-  { id: "10-25", label: "$10 - $25", min: 10, max: 25 },
-  { id: "25-50", label: "$25 - $50", min: 25, max: 50 },
-  { id: "50-100", label: "$50 - $100", min: 50, max: 100 },
-  { id: "over-100", label: "Over $100", min: 100, max: Infinity },
-];
 
 const PRODUCTS = [
   // Minecraft Products

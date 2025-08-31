@@ -432,7 +432,7 @@ function DeveloperStats() {
     {
       icon: Award,
       label: "Success Rate",
-      value: "94%",
+      value: "96%",
       description: "Customer satisfaction",
     },
   ];
