@@ -3,16 +3,14 @@ import {
   varchar,
   text,
   timestamp,
-  integer,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const platforms = pgTable(
   "platforms",
   {
-    id: varchar("id", { length: 64 }).primaryKey(), // "all", "minecraft", "roblox", "fivem", "websites"
+    id: varchar("id", { length: 64 }).primaryKey(),
     name: varchar("name", { length: 128 }).notNull(),
-    // optional: description or icon
     description: text("description"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

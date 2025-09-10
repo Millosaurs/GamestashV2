@@ -14,6 +14,8 @@ import {
   Hash,
   Gamepad2,
   Globe,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -31,63 +33,65 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from "@/components/ui/collapsible";
+import { useQuery } from "@tanstack/react-query";
+import { orpc } from "@/utils/orpc";
 
 // Platform and category structure
-const PLATFORMS = [
-  {
-    id: "all",
-    name: "All Platforms",
-    categories: [{ id: "all", name: "All Categories", count: 156 }],
-  },
-  {
-    id: "minecraft",
-    name: "Minecraft",
-    categories: [
-      { id: "all", name: "All Categories", count: 45 },
-      { id: "plugins", name: "Plugins", count: 18 },
-      { id: "mods", name: "Mods", count: 12 },
-      { id: "texturepacks", name: "Texture Packs", count: 8 },
-      { id: "shaders", name: "Shaders", count: 4 },
-      { id: "maps", name: "Maps", count: 3 },
-    ],
-  },
-  {
-    id: "roblox",
-    name: "Roblox",
-    categories: [
-      { id: "all", name: "All Categories", count: 38 },
-      { id: "scripts", name: "Scripts", count: 15 },
-      { id: "guis", name: "GUIs", count: 8 },
-      { id: "models", name: "Models", count: 7 },
-      { id: "animations", name: "Animations", count: 5 },
-      { id: "sounds", name: "Sounds", count: 3 },
-    ],
-  },
-  {
-    id: "fivem",
-    name: "FiveM",
-    categories: [
-      { id: "all", name: "All Categories", count: 32 },
-      { id: "mods", name: "Mods", count: 12 },
-      { id: "scripts", name: "Scripts", count: 8 },
-      { id: "vehicles", name: "Vehicles", count: 6 },
-      { id: "maps", name: "Maps", count: 4 },
-      { id: "packs", name: "Packs", count: 2 },
-    ],
-  },
-  {
-    id: "websites",
-    name: "Websites",
-    categories: [
-      { id: "all", name: "All Categories", count: 41 },
-      { id: "templates", name: "Templates", count: 15 },
-      { id: "themes", name: "Themes", count: 10 },
-      { id: "plugins", name: "Plugins", count: 8 },
-      { id: "components", name: "Components", count: 5 },
-      { id: "tools", name: "Tools", count: 3 },
-    ],
-  },
-];
+// const PLATFORMS = [
+//   {
+//     id: "all",
+//     name: "All Platforms",
+//     categories: [{ id: "all", name: "All Categories", count: 156 }],
+//   },
+//   {
+//     id: "minecraft",
+//     name: "Minecraft",
+//     categories: [
+//       { id: "all", name: "All Categories", count: 45 },
+//       { id: "plugins", name: "Plugins", count: 18 },
+//       { id: "mods", name: "Mods", count: 12 },
+//       { id: "texturepacks", name: "Texture Packs", count: 8 },
+//       { id: "shaders", name: "Shaders", count: 4 },
+//       { id: "maps", name: "Maps", count: 3 },
+//     ],
+//   },
+//   {
+//     id: "roblox",
+//     name: "Roblox",
+//     categories: [
+//       { id: "all", name: "All Categories", count: 38 },
+//       { id: "scripts", name: "Scripts", count: 15 },
+//       { id: "guis", name: "GUIs", count: 8 },
+//       { id: "models", name: "Models", count: 7 },
+//       { id: "animations", name: "Animations", count: 5 },
+//       { id: "sounds", name: "Sounds", count: 3 },
+//     ],
+//   },
+//   {
+//     id: "fivem",
+//     name: "FiveM",
+//     categories: [
+//       { id: "all", name: "All Categories", count: 32 },
+//       { id: "mods", name: "Mods", count: 12 },
+//       { id: "scripts", name: "Scripts", count: 8 },
+//       { id: "vehicles", name: "Vehicles", count: 6 },
+//       { id: "maps", name: "Maps", count: 4 },
+//       { id: "packs", name: "Packs", count: 2 },
+//     ],
+//   },
+//   {
+//     id: "websites",
+//     name: "Websites",
+//     categories: [
+//       { id: "all", name: "All Categories", count: 41 },
+//       { id: "templates", name: "Templates", count: 15 },
+//       { id: "themes", name: "Themes", count: 10 },
+//       { id: "plugins", name: "Plugins", count: 8 },
+//       { id: "components", name: "Components", count: 5 },
+//       { id: "tools", name: "Tools", count: 3 },
+//     ],
+//   },
+// ];
 
 const SORT_OPTIONS = [
   { value: "featured", label: "Featured First" },
@@ -98,7 +102,6 @@ const SORT_OPTIONS = [
   { value: "rating", label: "Highest Rated" },
   { value: "popular", label: "Most Popular" },
 ];
-
 
 const PRODUCTS = [
   // Minecraft Products
@@ -474,33 +477,29 @@ const PRODUCTS = [
     discount: 33,
   },
 
-
-
   // Add more products for better demo
   ...Array.from({ length: 10 }, (_, i) => {
     type Platform = "minecraft" | "roblox" | "fivem" | "websites";
-   const platforms: Platform[] = ["minecraft", "roblox", "fivem", "websites"];
+    const platforms: Platform[] = ["minecraft", "roblox", "fivem", "websites"];
 
-   const platformCategories: Record<Platform, string[]> = {
-     minecraft: ["plugins", "mods", "texturepacks", "shaders", "maps"],
-     roblox: ["scripts", "guis", "models", "animations", "sounds"],
-     fivem: ["mods", "scripts", "vehicles", "maps", "packs"],
-     websites: ["templates", "themes", "plugins", "components", "tools"],
-   };
+    const platformCategories: Record<Platform, string[]> = {
+      minecraft: ["plugins", "mods", "texturepacks", "shaders", "maps"],
+      roblox: ["scripts", "guis", "models", "animations", "sounds"],
+      fivem: ["mods", "scripts", "vehicles", "maps", "packs"],
+      websites: ["templates", "themes", "plugins", "components", "tools"],
+    };
 
-   const platformTags: Record<Platform, string[]> = {
-     minecraft: ["Spigot", "Forge", "Fabric", "OptiFine", "Bukkit"],
-     roblox: ["Studio", "Scripting", "Building", "Animation", "UI"],
-     fivem: ["ESX", "QBCore", "Roleplay", "MLO", "Custom"],
-     websites: ["React", "WordPress", "Bootstrap", "JavaScript", "CSS"],
-   };
+    const platformTags: Record<Platform, string[]> = {
+      minecraft: ["Spigot", "Forge", "Fabric", "OptiFine", "Bukkit"],
+      roblox: ["Studio", "Scripting", "Building", "Animation", "UI"],
+      fivem: ["ESX", "QBCore", "Roleplay", "MLO", "Custom"],
+      websites: ["React", "WordPress", "Bootstrap", "JavaScript", "CSS"],
+    };
 
-   const platform: Platform =
-     platforms[Math.floor(Math.random() * platforms.length)];
-   const categories = platformCategories[platform];
-   const tags = platformTags[platform];
-
-
+    const platform: Platform =
+      platforms[Math.floor(Math.random() * platforms.length)];
+    const categories = platformCategories[platform];
+    const tags = platformTags[platform];
 
     return {
       id: `${i + 21}`,
@@ -543,8 +542,25 @@ function Input({ className, ...props }: React.ComponentProps<"input">) {
   );
 }
 
+interface Category {
+  id: string;
+  name: string;
+  count: number;
+}
+
+interface Platform {
+  id: string;
+  name: string;
+  categories: Category[];
+}
+
 // Filter Sidebar Component
 function FilterSidebar({
+  platforms = [],
+  platformsLoading = false,
+  platformsError = null,
+  categoriesLoading = false,
+  categoriesError = null,
   selectedPlatform,
   setSelectedPlatform,
   selectedCategory,
@@ -557,6 +573,11 @@ function FilterSidebar({
   setSelectedTags,
   onClose,
 }: {
+  platforms?: Platform[];
+  platformsLoading?: boolean;
+  platformsError?: any;
+  categoriesLoading?: boolean;
+  categoriesError?: any;
   selectedPlatform: string;
   setSelectedPlatform: (platform: string) => void;
   selectedCategory: string;
@@ -592,20 +613,30 @@ function FilterSidebar({
     selectedTags.length > 0;
 
   // Get current platform's categories
-  const currentPlatform = PLATFORMS.find((p) => p.id === selectedPlatform);
+  const currentPlatform = platforms.find((p) => p.id === selectedPlatform);
   const availableCategories = currentPlatform?.categories || [];
 
   // Get all unique tags from products for the selected platform
-  const filteredProducts =
-    selectedPlatform === "all"
+  const filteredProducts = React.useMemo(() => {
+    return selectedPlatform === "all"
       ? PRODUCTS
       : PRODUCTS.filter((p) => p.platform === selectedPlatform);
-  const allTags = Array.from(new Set(filteredProducts.flatMap((p) => p.tags)));
+  }, [selectedPlatform]);
+
+  const allTags = React.useMemo(() => {
+    return Array.from(new Set(filteredProducts.flatMap((p) => p.tags))).sort();
+  }, [filteredProducts]);
 
   // Reset category when platform changes
   React.useEffect(() => {
     setSelectedCategory("all");
   }, [selectedPlatform, setSelectedCategory]);
+
+  React.useEffect(() => {
+    setSelectedCategory("all");
+  }, [selectedPlatform, setSelectedCategory]);
+
+  // Add this helper function inside the FilterSidebar component
 
   return (
     <div className="space-y-6">
@@ -652,29 +683,41 @@ function FilterSidebar({
             </CollapsibleTrigger>
           </div>
           <CollapsibleContent className="space-y-1 mt-2">
-            {PLATFORMS.map((platform) => (
-              <button
-                key={platform.id}
-                onClick={() => setSelectedPlatform(platform.id)}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent",
-                  selectedPlatform === platform.id
-                    ? "bg-accent text-accent-foreground font-medium"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  {platform.id === "websites" && <Globe className="size-3" />}
-                  {platform.id !== "websites" && platform.id !== "all" && (
-                    <Gamepad2 className="size-3" />
+            {platformsLoading ? (
+              <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                <Loader2 className="size-3 animate-spin" />
+                Loading platforms...
+              </div>
+            ) : platformsError ? (
+              <div className="flex items-center gap-2 px-3 py-2 text-sm text-destructive">
+                <AlertCircle className="size-3" />
+                Error loading platforms
+              </div>
+            ) : (
+              platforms.map((platform) => (
+                <button
+                  key={platform.id}
+                  onClick={() => setSelectedPlatform(platform.id)}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent",
+                    selectedPlatform === platform.id
+                      ? "bg-accent text-accent-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
-                  {platform.name}
-                </span>
-                <span className="text-xs opacity-60">
-                  {platform.categories[0]?.count || 0}
-                </span>
-              </button>
-            ))}
+                >
+                  <span className="flex items-center gap-2">
+                    {platform.id === "websites" && <Globe className="size-3" />}
+                    {platform.id !== "websites" && platform.id !== "all" && (
+                      <Gamepad2 className="size-3" />
+                    )}
+                    {platform.name}
+                  </span>
+                  <span className="text-xs opacity-60">
+                    {platform.categories?.[0]?.count || 0}
+                  </span>
+                </button>
+              ))
+            )}
           </CollapsibleContent>
         </Collapsible>
       </div>
@@ -692,25 +735,40 @@ function FilterSidebar({
             </CollapsibleTrigger>
           </div>
           <CollapsibleContent className="space-y-1 mt-2">
-            {availableCategories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent",
-                  selectedCategory === category.id
-                    ? "bg-accent text-accent-foreground font-medium"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <span>{category.name}</span>
-                <span className="text-xs opacity-60">{category.count}</span>
-              </button>
-            ))}
+            {categoriesLoading ? (
+              <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                <Loader2 className="size-3 animate-spin" />
+                Loading categories...
+              </div>
+            ) : categoriesError ? (
+              <div className="flex items-center gap-2 px-3 py-2 text-sm text-destructive">
+                <AlertCircle className="size-3" />
+                Error loading categories
+              </div>
+            ) : availableCategories.length > 0 ? (
+              availableCategories.map((category) => (
+                <button
+                  key={`${selectedPlatform}-${category.id}`} // Fix: Make keys unique
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-accent",
+                    selectedCategory === category.id
+                      ? "bg-accent text-accent-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <span>{category.name}</span> {/* Removed icon */}
+                  <span className="text-xs opacity-60">{category.count}</span>
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                No categories available
+              </div>
+            )}
           </CollapsibleContent>
         </Collapsible>
       </div>
-
       {/* Special Filters */}
       <div className="space-y-3">
         <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -745,7 +803,7 @@ function FilterSidebar({
       </div>
 
       {/* Tags */}
-      {allTags.length > 0 && (
+      {!platformsLoading && !categoriesLoading && allTags.length > 0 && (
         <div className="space-y-3">
           <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
             <Hash className="size-3" />
@@ -754,7 +812,7 @@ function FilterSidebar({
           <div className="space-y-2 max-h-40 overflow-y-auto">
             {allTags.map((tag) => (
               <label
-                key={tag}
+                key={`${selectedPlatform}-${tag}`}
                 className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground cursor-pointer"
               >
                 <input
@@ -791,6 +849,85 @@ export default function MarketPage() {
     () => SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Sort",
     [sortBy]
   );
+  //orpc procedures
+
+  const {
+    data: platforms = [],
+    isLoading: platformsLoading,
+    error: platformsError,
+  } = useQuery(orpc.platforms.list.queryOptions());
+
+  const {
+    data: allCategories = [],
+    isLoading: allCategoriesLoading,
+    error: allCategoriesError,
+  } = useQuery(orpc.categories.list.queryOptions());
+
+  const {
+    data: selectedPlatformCategories = [],
+    isLoading: selectedCategoriesLoading,
+  } = useQuery({
+    ...orpc.categories.byPlatform.queryOptions({
+      input: { platformId: selectedPlatform },
+    }),
+    enabled: selectedPlatform !== "all" && selectedPlatform !== "",
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  const PLATFORMS = React.useMemo(() => {
+    if (platformsLoading || allCategoriesLoading || !platforms) {
+      return [];
+    }
+
+    const allPlatformsOption = {
+      id: "all",
+      name: "All Platforms",
+      categories: [
+        { id: "all", name: "All Categories", count: PRODUCTS.length },
+      ],
+    };
+
+    const transformedPlatforms = platforms
+      .filter((platform) => platform.id !== "all")
+      .map((platform) => {
+        const categoriesToUse =
+          platform.id === selectedPlatform &&
+          selectedPlatformCategories.length > 0
+            ? selectedPlatformCategories.filter((cat) => cat.id !== "all") // Filter out 'all' categories from DB
+            : allCategories.filter((cat) => cat.platformId === platform.id && cat.id !== "all"); // Filter out 'all' categories from DB
+
+        const allCategoriesOption = {
+          id: "all",
+          name: "All Categories",
+          count: PRODUCTS.filter((p) => p.platform === platform.id).length,
+        };
+
+        const categoryOptions = categoriesToUse.map((cat) => ({
+          id: cat.id,
+          name: cat.name,
+          count:
+            cat.count ||
+            PRODUCTS.filter(
+              (p) => p.platform === platform.id && p.category === cat.id
+            ).length,
+        }));
+
+        return {
+          id: platform.id,
+          name: platform.name,
+          categories: [allCategoriesOption, ...categoryOptions],
+        };
+      });
+
+    return [allPlatformsOption, ...transformedPlatforms];
+  }, [
+    platforms,
+    allCategories,
+    selectedPlatform,
+    selectedPlatformCategories,
+    platformsLoading,
+    allCategoriesLoading,
+  ]);
 
   // Filter and sort products
   const filteredProducts = React.useMemo(() => {
@@ -887,6 +1024,13 @@ export default function MarketPage() {
           />
           <div className="absolute left-0 top-0 h-full w-80 bg-background border-r p-6 overflow-y-auto">
             <FilterSidebar
+              platforms={PLATFORMS}
+              platformsLoading={platformsLoading}
+              platformsError={platformsError}
+              categoriesLoading={
+                allCategoriesLoading || selectedCategoriesLoading
+              }
+              categoriesError={allCategoriesError}
               selectedPlatform={selectedPlatform}
               setSelectedPlatform={setSelectedPlatform}
               selectedCategory={selectedCategory}
@@ -915,7 +1059,15 @@ export default function MarketPage() {
 
         {/* Filters */}
         <div className="flex-1 overflow-y-auto p-6">
+         
           <FilterSidebar
+            platforms={PLATFORMS}
+            platformsLoading={platformsLoading}
+            platformsError={platformsError}
+            categoriesLoading={
+              allCategoriesLoading || selectedCategoriesLoading
+            }
+            categoriesError={allCategoriesError}
             selectedPlatform={selectedPlatform}
             setSelectedPlatform={setSelectedPlatform}
             selectedCategory={selectedCategory}
@@ -926,6 +1078,7 @@ export default function MarketPage() {
             setShowDiscounted={setShowDiscounted}
             selectedTags={selectedTags}
             setSelectedTags={setSelectedTags}
+            onClose={() => setShowFilters(false)}
           />
         </div>
       </aside>
