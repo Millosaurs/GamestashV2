@@ -1,7 +1,7 @@
-import { platformsRoute } from "@/lib/procedures/platforms";
+import { platformsRoute } from "../lib/procedures/platforms";
 import { protectedProcedure, publicProcedure } from "../lib/orpc";
-import { categoriesRoute } from "@/lib/procedures/categories";
-import { productsRoute } from "@/lib/procedures/products";
+import { categoriesRoute } from "../lib/procedures/categories";
+import { productsRoute } from "../lib/procedures/products";
 
 export const appRouter = {
   healthCheck: publicProcedure.handler(() => {
