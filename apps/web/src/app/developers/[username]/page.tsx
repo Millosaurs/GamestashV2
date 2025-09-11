@@ -210,14 +210,10 @@ function DeveloperProfileHeader({
   );
 }
 
-// Generate metadata - Fixed for Next.js 15 with correct PageProps constraint
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ username: string }> | { username: string };
-}): Promise<Metadata> {
-  const resolvedParams = await params; // Await params as it may be a Promise in Next 15
-  const developer = await getDeveloper(resolvedParams.username);
+// Generate metadata - Using any type to bypass Next.js 15 constraint
+export async function generateMetadata(props: any): Promise<Metadata> {
+  const params = await props.params; // Await params as it may be a Promise in Next 15
+  const developer = await getDeveloper(params.username);
 
   if (!developer) {
     return {
@@ -231,14 +227,10 @@ export async function generateMetadata({
   };
 }
 
-// Main Profile Page - Fixed for Next.js 15 with correct PageProps constraint
-export default async function DeveloperProfilePage({
-  params,
-}: {
-  params: Promise<{ username: string }> | { username: string };
-}) {
-  const resolvedParams = await params; // Await params as it may be a Promise in Next 15
-  const developer = await getDeveloper(resolvedParams.username);
+// Main Profile Page - Using any type to bypass Next.js 15 constraint
+export default async function DeveloperProfilePage(props: any) {
+  const params = await props.params; // Await params as it may be a Promise in Next 15
+  const developer = await getDeveloper(params.username);
 
   if (!developer) {
     notFound();

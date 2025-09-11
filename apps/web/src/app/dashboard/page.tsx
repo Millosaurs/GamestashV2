@@ -9,8 +9,6 @@ export default function Dashboard() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
 
-  const privateData = useQuery(orpc.privateData.queryOptions());
-
   useEffect(() => {
     if (!session && !isPending) {
       router.push("/login");

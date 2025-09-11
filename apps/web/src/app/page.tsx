@@ -7,8 +7,6 @@ import { FeaturedProducts } from "@/components/featured-products";
 import { Categories } from "@/components/categories";
 
 export default function Home() {
-  const healthCheck = useQuery(orpc.healthCheck.queryOptions());
-
   return (
     <div className="container mx-auto max-w-9xl px-4 py-2">
       <HeroSection />
