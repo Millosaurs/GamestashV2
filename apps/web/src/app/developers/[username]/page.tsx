@@ -25,12 +25,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { mockDevelopers, type DeveloperProfile } from "../page";
 
-// Next.js 15 params type - can be Promise or object
-type Params = { username: string };
-type Props = {
-  params: Params | Promise<Params>;
-};
-
 // Get developer by username
 async function getDeveloper(
   username: string
@@ -216,8 +210,12 @@ function DeveloperProfileHeader({
   );
 }
 
-// Generate metadata - Fixed for Next.js 15
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+// Generate metadata - Fixed for Next.js 15 with correct PageProps constraint
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }> | { username: string };
+}): Promise<Metadata> {
   const resolvedParams = await params; // Await params as it may be a Promise in Next 15
   const developer = await getDeveloper(resolvedParams.username);
 
@@ -233,8 +231,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-// Main Profile Page - Fixed for Next.js 15
-export default async function DeveloperProfilePage({ params }: Props) {
+// Main Profile Page - Fixed for Next.js 15 with correct PageProps constraint
+export default async function DeveloperProfilePage({
+  params,
+}: {
+  params: Promise<{ username: string }> | { username: string };
+}) {
   const resolvedParams = await params; // Await params as it may be a Promise in Next 15
   const developer = await getDeveloper(resolvedParams.username);
 
