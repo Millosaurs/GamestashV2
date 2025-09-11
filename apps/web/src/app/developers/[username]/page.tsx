@@ -25,14 +25,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { mockDevelopers, type DeveloperProfile } from "../page";
 
+// Next.js 15 params type - can be Promise or object
+type Params = { username: string };
+type Props = {
+  params: Params | Promise<Params>;
+};
+
 // Get developer by username
 async function getDeveloper(
   username: string
 ): Promise<DeveloperProfile | null> {
   // In a real app, this would be an API call
+  // Added defensive check for mockDevelopers
   return (
-    mockDevelopers.find((dev: DeveloperProfile) => dev.username === username) ||
-    null
+    mockDevelopers?.find(
+      (dev: DeveloperProfile) => dev.username === username
+    ) || null
   );
 }
 
@@ -208,13 +216,27 @@ function DeveloperProfileHeader({
   );
 }
 
-// Main Profile Page
-export default async function DeveloperProfilePage({
-  params,
-}: {
-  params: { username: string };
-}) {
-  const developer = await getDeveloper(params.username);
+// Generate metadata - Fixed for Next.js 15
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const resolvedParams = await params; // Await params as it may be a Promise in Next 15
+  const developer = await getDeveloper(resolvedParams.username);
+
+  if (!developer) {
+    return {
+      title: "Developer Not Found | GameStash",
+    };
+  }
+
+  return {
+    title: `${developer.name} (@${developer.username}) | GameStash`,
+    description: developer.bio,
+  };
+}
+
+// Main Profile Page - Fixed for Next.js 15
+export default async function DeveloperProfilePage({ params }: Props) {
+  const resolvedParams = await params; // Await params as it may be a Promise in Next 15
+  const developer = await getDeveloper(resolvedParams.username);
 
   if (!developer) {
     notFound();
