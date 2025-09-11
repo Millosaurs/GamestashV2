@@ -1,8 +1,8 @@
 // products.ts - Fixed version
-import { db } from "@/db";
-import { products } from "@/db/schema/products";
-import { platforms } from "@/db/schema/platforms";
-import { categories } from "@/db/schema/categories";
+import { db } from "../../db";
+import { products } from "../../db/schema/products";
+import { platforms } from "../../db/schema/platforms";
+import { categories } from "../../db/schema/categories";
 import { os } from "@orpc/server";
 import {
   eq,

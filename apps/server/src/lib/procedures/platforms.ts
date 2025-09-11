@@ -1,5 +1,5 @@
-import { db } from "@/db";
-import { platforms } from "@/db/schema/platforms";
+import { db } from "../../db/";
+import { platforms } from "../../db/schema/platforms";
 import { os } from "@orpc/server";
 
 

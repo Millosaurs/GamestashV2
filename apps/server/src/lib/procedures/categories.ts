@@ -1,7 +1,7 @@
 // categories.ts
-import { db } from "@/db";
-import { categories } from "@/db/schema/categories";
-import { products } from "@/db/schema/products";
+import { db } from "../../db";
+import { categories } from "../../db/schema/categories";
+import { products } from "../../db/schema/products";
 import { os } from "@orpc/server";
 import { eq, sql, count } from "drizzle-orm";
 import { z } from "zod";
