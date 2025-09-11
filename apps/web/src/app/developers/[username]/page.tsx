@@ -208,26 +208,6 @@ function DeveloperProfileHeader({
   );
 }
 
-// Generate metadata
-export async function generateMetadata({
-  params,
-}: {
-  params: { username: string };
-}): Promise<Metadata> {
-  const developer = await getDeveloper(params.username);
-
-  if (!developer) {
-    return {
-      title: "Developer Not Found | GameStash",
-    };
-  }
-
-  return {
-    title: `${developer.name} (@${developer.username}) | GameStash`,
-    description: developer.bio,
-  };
-}
-
 // Main Profile Page
 export default async function DeveloperProfilePage({
   params,
