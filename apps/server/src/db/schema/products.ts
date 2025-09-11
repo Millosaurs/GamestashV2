@@ -9,6 +9,7 @@ import {
   timestamp,
   index,
   real,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { platforms } from "./platforms";
 import { categories } from "./categories";
@@ -34,9 +35,6 @@ export const products = pgTable(
       .references(() => platforms.id, { onDelete: "restrict" })
       .notNull(),
     categoryId: varchar("category_id", { length: 64 }).notNull(),
-    // composite FK to categories(platform_id, id)
-    // drizzle doesn't do composite references inline; we create a manual FK in migration if needed.
-    // For now, we’ll add an index and validate in app or add SQL migration constraint.
 
     rating: real("rating").notNull().default(0), // 4.5 etc.
     reviewCount: integer("review_count").notNull().default(0),
@@ -49,7 +47,7 @@ export const products = pgTable(
     isNew: boolean("is_new").notNull().default(false),
 
     // Optional JSONB tags array if you want denormalized tags too (not recommended when using join table)
-    // tags: jsonb("tags"),
+    tags: jsonb("tags"),
 
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

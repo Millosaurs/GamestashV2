@@ -16,12 +16,17 @@ export const listCategories = os.handler(async () => {
         name: categories.name,
         platformId: categories.platformId,
         description: categories.description,
-        count: sql<number>`COALESCE(${count(products.id)}, 0)`.as('count'),
+        count: sql<number>`COALESCE(${count(products.id)}, 0)`.as("count"),
       })
       .from(categories)
       .leftJoin(products, eq(categories.id, products.categoryId))
       .where(sql`${categories.id} != 'all'`) // Exclude 'all' categories from DB
-      .groupBy(categories.id, categories.name, categories.platformId, categories.description)
+      .groupBy(
+        categories.id,
+        categories.name,
+        categories.platformId,
+        categories.description
+      )
       .orderBy(categories.platformId, categories.name)
       .limit(50); // Add limit like platforms
 
@@ -54,12 +59,19 @@ export const listCategoriesByPlatform = os
           name: categories.name,
           platformId: categories.platformId,
           description: categories.description,
-          count: sql<number>`COALESCE(${count(products.id)}, 0)`.as('count'),
+          count: sql<number>`COALESCE(${count(products.id)}, 0)`.as("count"),
         })
         .from(categories)
         .leftJoin(products, eq(categories.id, products.categoryId))
-        .where(sql`${categories.platformId} = ${platformId} AND ${categories.id} != 'all'`) // Exclude 'all' categories from DB
-        .groupBy(categories.id, categories.name, categories.platformId, categories.description)
+        .where(
+          sql`${categories.platformId} = ${platformId} AND ${categories.id} != 'all'`
+        ) // Exclude 'all' categories from DB
+        .groupBy(
+          categories.id,
+          categories.name,
+          categories.platformId,
+          categories.description
+        )
         .orderBy(categories.name)
         .limit(50); // Add limit like platforms
 
