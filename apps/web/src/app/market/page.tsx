@@ -123,10 +123,13 @@ function FilterSidebar({
     );
   };
 
+  const PRICE_MIN = 0;
+  const PRICE_MAX = 500;
+
   const clearAllFilters = () => {
     setSelectedPlatform("all");
     setSelectedCategory("all");
-    setPriceRange([minPrice, maxPrice]);
+    setPriceRange([PRICE_MIN, PRICE_MAX]);
     setShowDiscounted(false);
     setSelectedTags([]);
   };
@@ -305,22 +308,24 @@ function FilterSidebar({
           <DollarSign className="size-3" />
           Price Range
         </h4>
+
         <PriceSlider
           min={minPrice}
           max={maxPrice}
           value={priceRange}
           onValueChange={(next) => {
-            // Ensure the values are numbers
-            const numericValues = [
-              typeof next[0] === "string" ? parseFloat(next[0]) : next[0],
-              typeof next[1] === "string" ? parseFloat(next[1]) : next[1],
-            ] as [number, number];
-            setPriceRange(numericValues);
+            // Ensure the values are always numbers and within bounds
+            const clampedMin = Math.max(minPrice, Math.min(maxPrice, next[0]));
+            const clampedMax = Math.max(minPrice, Math.min(maxPrice, next[1]));
+            setPriceRange([clampedMin, clampedMax]);
           }}
+          onApply={undefined} // Not needed since we're updating in real-time
         />
-        {/* Display current price range */}
-        <div className="text-xs text-muted-foreground">
-          ${priceRange[0].toFixed(0)} - ${priceRange[1].toFixed(0)}
+
+        {/* Display current price range - ensure it's showing correct values */}
+        <div className="flex justify-between text-xs text-muted-foreground mt-2">
+          <span>${priceRange[0].toLocaleString()}</span>
+          <span>${priceRange[1].toLocaleString()}+</span>
         </div>
       </div>
 
@@ -370,13 +375,24 @@ export default function MarketPage() {
   ]);
   const [showDiscounted, setShowDiscounted] = React.useState(false);
   const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
-  const [sortBy, setSortBy] = React.useState<"featured" | "newest" | "oldest" | "price-low" | "price-high" | "rating" | "popular">("featured");
+  const [sortBy, setSortBy] = React.useState<
+    | "featured"
+    | "newest"
+    | "oldest"
+    | "price-low"
+    | "price-high"
+    | "rating"
+    | "popular"
+  >("featured");
   const [showFilters, setShowFilters] = React.useState(false);
 
   const currentSortLabel = React.useMemo(
     () => SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Sort",
     [sortBy]
   );
+
+  const PRICE_MIN = 0;
+  const PRICE_MAX = 500;
 
   // Fetch platforms
   const {
@@ -404,27 +420,6 @@ export default function MarketPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch price range
-  const { data: priceRangeData } = useQuery({
-    ...orpc.products.priceRange.queryOptions(),
-    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
-  });
-
-  // Update price range when data loads - ensure numbers
-  React.useEffect(() => {
-    if (priceRangeData && priceRange[0] === 0 && priceRange[1] === 100) {
-      const min =
-        typeof priceRangeData.min === "number"
-          ? priceRangeData.min
-          : parseFloat(priceRangeData.min as any);
-      const max =
-        typeof priceRangeData.max === "number"
-          ? priceRangeData.max
-          : parseFloat(priceRangeData.max as any);
-      setPriceRange([min, max]);
-    }
-  }, [priceRangeData, priceRange]);
-
   // Fetch available tags
   const { data: availableTags = [], isLoading: tagsLoading } = useQuery({
     ...orpc.products.tags.queryOptions({
@@ -436,20 +431,28 @@ export default function MarketPage() {
   });
 
   // Fetch products with filters
-  const productsInput = React.useMemo(() => ({
-    search: searchQuery || undefined,
-    platformId: selectedPlatform !== "all" ? selectedPlatform : undefined,
-    categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
-    minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
-    maxPrice:
-      priceRange[1] < (priceRangeData?.max || 100)
-        ? priceRange[1]
-        : undefined,
-    showDiscounted: showDiscounted ? true : undefined,
-    tags: selectedTags.length > 0 ? selectedTags : undefined,
-    sortBy,
-    limit: 100, // Adjust as needed
-  }), [searchQuery, selectedPlatform, selectedCategory, priceRange, priceRangeData?.max, showDiscounted, selectedTags, sortBy]);
+  const productsInput = React.useMemo(
+    () => ({
+      search: searchQuery || undefined,
+      platformId: selectedPlatform !== "all" ? selectedPlatform : undefined,
+      categoryId: selectedCategory !== "all" ? selectedCategory : undefined,
+      minPrice: priceRange[0] > PRICE_MIN ? priceRange[0] : undefined,
+      maxPrice: priceRange[1] < PRICE_MAX ? priceRange[1] : undefined,
+      showDiscounted: showDiscounted ? true : undefined,
+      tags: selectedTags.length > 0 ? selectedTags : undefined,
+      sortBy,
+      limit: 100,
+    }),
+    [
+      searchQuery,
+      selectedPlatform,
+      selectedCategory,
+      priceRange,
+      showDiscounted,
+      selectedTags,
+      sortBy,
+    ]
+  );
 
   const {
     data: products = [],
@@ -545,8 +548,8 @@ export default function MarketPage() {
               setSelectedCategory={setSelectedCategory}
               priceRange={priceRange}
               setPriceRange={setPriceRange}
-              minPrice={priceRangeData?.min || 0}
-              maxPrice={priceRangeData?.max || 100}
+              minPrice={PRICE_MIN}
+              maxPrice={PRICE_MAX}
               showDiscounted={showDiscounted}
               setShowDiscounted={setShowDiscounted}
               selectedTags={selectedTags}
@@ -583,8 +586,8 @@ export default function MarketPage() {
             setSelectedCategory={setSelectedCategory}
             priceRange={priceRange}
             setPriceRange={setPriceRange}
-            minPrice={priceRangeData?.min || 0}
-            maxPrice={priceRangeData?.max || 100}
+            minPrice={PRICE_MIN}
+            maxPrice={PRICE_MAX}
             showDiscounted={showDiscounted}
             setShowDiscounted={setShowDiscounted}
             selectedTags={selectedTags}
@@ -782,8 +785,8 @@ export default function MarketPage() {
                   setSearchQuery("");
                   setSelectedPlatform("all");
                   setSelectedCategory("all");
-                  const min = priceRangeData?.min || 0;
-                  const max = priceRangeData?.max || 100;
+                  const min = PRICE_MIN || 0;
+                  const max = PRICE_MAX || 100;
                   setPriceRange([min, max]);
                   setShowDiscounted(false);
                   setSelectedTags([]);

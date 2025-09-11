@@ -25,10 +25,10 @@ export const Header = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
   return (
-    <header>
+    <header className="">
       <nav
         data-state={menuState && "active"}
-        className="fixed z-20 w-full px-2"
+        className="fixed z-10 w-full px-2"
       >
         <div
           className={cn(

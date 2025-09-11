@@ -94,14 +94,13 @@ export const listProducts = os
       }
 
       if (tags && tags.length > 0) {
-        // Check if any of the provided tags exist in the JSONB array
         const tagConditions = tags.map((tag) => sql`${products.tags} ? ${tag}`);
         conditions.push(or(...tagConditions));
       }
 
-      // Build the base query
+      // Build the base query - REMOVED selectDistinct, use regular select instead
       const baseQuery = db
-        .selectDistinct({
+        .select({
           id: products.id,
           slug: products.slug,
           name: products.name,
@@ -132,40 +131,58 @@ export const listProducts = os
       const queryWithWhere =
         conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
-      // Apply sorting
+      // Apply sorting - now this will work because we removed selectDistinct
       let queryWithSort;
       switch (sortBy) {
         case "featured":
           queryWithSort = queryWithWhere.orderBy(
             desc(products.isFeatured),
+            desc(products.rating),
             desc(products.id)
           );
           break;
         case "newest":
-          queryWithSort = queryWithWhere.orderBy(desc(products.createdAt));
+          queryWithSort = queryWithWhere.orderBy(
+            desc(products.createdAt),
+            desc(products.id)
+          );
           break;
         case "oldest":
-          queryWithSort = queryWithWhere.orderBy(asc(products.createdAt));
+          queryWithSort = queryWithWhere.orderBy(
+            asc(products.createdAt),
+            asc(products.id)
+          );
           break;
         case "price-low":
           queryWithSort = queryWithWhere.orderBy(
-            asc(sql`CAST(${products.price} AS NUMERIC)`)
+            asc(sql`CAST(${products.price} AS NUMERIC)`),
+            asc(products.id)
           );
           break;
         case "price-high":
           queryWithSort = queryWithWhere.orderBy(
-            desc(sql`CAST(${products.price} AS NUMERIC)`)
+            desc(sql`CAST(${products.price} AS NUMERIC)`),
+            desc(products.id)
           );
           break;
         case "rating":
-          queryWithSort = queryWithWhere.orderBy(desc(products.rating));
+          queryWithSort = queryWithWhere.orderBy(
+            desc(products.rating),
+            desc(products.reviewCount),
+            desc(products.id)
+          );
           break;
         case "popular":
-          queryWithSort = queryWithWhere.orderBy(desc(products.reviewCount));
+          queryWithSort = queryWithWhere.orderBy(
+            desc(products.reviewCount),
+            desc(products.rating),
+            desc(products.id)
+          );
           break;
         default:
           queryWithSort = queryWithWhere.orderBy(
             desc(products.isFeatured),
+            desc(products.rating),
             desc(products.id)
           );
       }
@@ -181,8 +198,17 @@ export const listProducts = os
         "products found"
       );
 
+      // If you still need to remove duplicates, do it in JavaScript
+      // But typically, if your data model is correct, you shouldn't have duplicates
+      const uniqueProducts = result.reduce((acc, product) => {
+        if (!acc.find((p) => p.id === product.id)) {
+          acc.push(product);
+        }
+        return acc;
+      }, [] as typeof result);
+
       // Transform the result to match your frontend interface
-      const transformedProducts = result.map((product) => ({
+      const transformedProducts = uniqueProducts.map((product) => ({
         id: product.id.toString(),
         slug: product.slug,
         name: product.name,
@@ -192,14 +218,14 @@ export const listProducts = os
         platform: product.platformId,
         category: product.categoryId,
         rating: product.rating || 0,
-        reviewCount: product.reviewCount,
-        sold: product.sold,
+        reviewCount: product.reviewCount || 0,
+        sold: product.sold || 0,
         image: product.image || "/placeholder.svg",
         author: product.author,
         tags: Array.isArray(product.tags) ? (product.tags as string[]) : [],
-        isFeatured: product.isFeatured,
-        isNew: product.isNew,
-        discount: product.discount,
+        isFeatured: product.isFeatured || false,
+        isNew: product.isNew || false,
+        discount: product.discount || 0,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
       }));
@@ -211,7 +237,7 @@ export const listProducts = os
     }
   });
 
-// Get all unique tags for filtering
+// Rest of your exports remain the same...
 export const getProductTags = os
   .input(
     z.object({
@@ -235,7 +261,6 @@ export const getProductTags = os
 
       const result = await query;
 
-      // Extract unique tags from JSONB arrays
       const allTags = new Set<string>();
       result.forEach((row) => {
         if (Array.isArray(row.tags)) {
@@ -250,7 +275,6 @@ export const getProductTags = os
     }
   });
 
-// Get price range for filtering
 export const getPriceRange = os.handler(async () => {
   try {
     const result = await db
