@@ -117,7 +117,8 @@ export default function HeroSection() {
                   as="p"
                   className="mx-auto mt-8 max-w-2xl text-balance text-lg"
                 >
-                  Discover, buy, and get inspired by premium, hand-picked gaming setups from the world's best creators.
+                  Discover, buy, and get inspired by premium, hand-picked gaming
+                  setups from the world's best creators.
                 </TextEffect>
 
                 <AnimatedGroup
@@ -143,7 +144,7 @@ export default function HeroSection() {
                       size="lg"
                       className="rounded-xl px-5 text-base"
                     >
-                      <Link href="#link">
+                      <Link href="/market">
                         <span className="text-nowrap">Explore products</span>
                       </Link>
                     </Button>
@@ -162,8 +163,6 @@ export default function HeroSection() {
                 </AnimatedGroup>
               </div>
             </div>
-
-           
           </div>
         </section>
       </main>

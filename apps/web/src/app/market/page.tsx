@@ -1,4 +1,5 @@
-// MarketPage.tsx - Updated version
+// MarketPage.tsx - With Caching Added
+
 "use client";
 
 import * as React from "react";
@@ -47,7 +48,7 @@ const SORT_OPTIONS = [
   { value: "popular" as const, label: "Most Popular" },
 ];
 
-// Input Component
+// Input Component (no changes)
 function Input({ className, ...props }: React.ComponentProps<"input">) {
   return (
     <input
@@ -61,6 +62,7 @@ function Input({ className, ...props }: React.ComponentProps<"input">) {
   );
 }
 
+// Interfaces (no changes)
 interface Category {
   id: string;
   name: string;
@@ -73,7 +75,7 @@ interface Platform {
   categories: Category[];
 }
 
-// Filter Sidebar Component
+// Filter Sidebar Component (no changes)
 function FilterSidebar({
   platforms = [],
   platformsLoading = false,
@@ -142,11 +144,9 @@ function FilterSidebar({
     showDiscounted ||
     selectedTags.length > 0;
 
-  // Get current platform's categories
   const currentPlatform = platforms.find((p) => p.id === selectedPlatform);
   const availableCategories = currentPlatform?.categories || [];
 
-  // Reset category when platform changes
   React.useEffect(() => {
     setSelectedCategory("all");
   }, [selectedPlatform, setSelectedCategory]);
@@ -314,15 +314,13 @@ function FilterSidebar({
           max={maxPrice}
           value={priceRange}
           onValueChange={(next) => {
-            // Ensure the values are always numbers and within bounds
             const clampedMin = Math.max(minPrice, Math.min(maxPrice, next[0]));
             const clampedMax = Math.max(minPrice, Math.min(maxPrice, next[1]));
             setPriceRange([clampedMin, clampedMax]);
           }}
-          onApply={undefined} // Not needed since we're updating in real-time
+          onApply={undefined}
         />
 
-        {/* Display current price range - ensure it's showing correct values */}
         <div className="flex justify-between text-xs text-muted-foreground mt-2">
           <span>${priceRange[0].toLocaleString()}</span>
           <span>${priceRange[1].toLocaleString()}+</span>
@@ -399,14 +397,20 @@ export default function MarketPage() {
     data: platforms = [],
     isLoading: platformsLoading,
     error: platformsError,
-  } = useQuery(orpc.platforms.list.queryOptions());
+  } = useQuery({
+    ...orpc.platforms.list.queryOptions(),
+    staleTime: 15000, // ⭐ Cache for 15 seconds
+  });
 
   // Fetch all categories
   const {
     data: allCategories = [],
     isLoading: allCategoriesLoading,
     error: allCategoriesError,
-  } = useQuery(orpc.categories.list.queryOptions());
+  } = useQuery({
+    ...orpc.categories.list.queryOptions(),
+    staleTime: 15000, // ⭐ Cache for 15 seconds
+  });
 
   // Fetch categories for selected platform
   const {
@@ -417,7 +421,7 @@ export default function MarketPage() {
       input: { platformId: selectedPlatform },
     }),
     enabled: selectedPlatform !== "all" && selectedPlatform !== "",
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15000, // ⭐ Cache for 15 seconds
   });
 
   // Fetch available tags
@@ -427,7 +431,7 @@ export default function MarketPage() {
         platformId: selectedPlatform !== "all" ? selectedPlatform : undefined,
       },
     }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15000, // ⭐ Cache for 15 seconds
   });
 
   // Fetch products with filters
@@ -462,7 +466,7 @@ export default function MarketPage() {
     ...orpc.products.list.queryOptions({
       input: productsInput,
     }),
-    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
+    staleTime: 15000, // ⭐ Cache for 15 seconds
   });
 
   // Build platforms structure for FilterSidebar
@@ -721,7 +725,6 @@ export default function MarketPage() {
               </pre>
             </div>
           ) : products.length > 0 ? (
-            // In your products.map() section (around line 741)
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
               {products.map((product, index) => {
                 const badges = [];
@@ -742,14 +745,13 @@ export default function MarketPage() {
                     variant: "destructive" as const,
                   });
 
-                // Use a more unique key - combine ID with index as fallback
                 const uniqueKey = product.id
                   ? `${product.id}-${index}`
                   : `product-${index}`;
 
                 return (
                   <OverlayCard
-                    key={uniqueKey} // Fixed: More unique key
+                    key={uniqueKey}
                     image={product.image}
                     imageAlt={product.name}
                     title={product.name}
