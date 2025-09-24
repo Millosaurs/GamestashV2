@@ -73,7 +73,7 @@ export function CategoryCard({
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
           {/* Item Count Badge */}
-          {itemCount !== undefined && (
+          {/* {itemCount !== undefined && (
             <div className="absolute top-4 right-4 z-10">
               <Badge
                 variant="secondary"
@@ -82,7 +82,7 @@ export function CategoryCard({
                 {itemCount}+ items
               </Badge>
             </div>
-          )}
+          )} */}
 
           {/* Overlayed Content */}
           <div className="absolute inset-0 flex flex-col justify-end p-6 z-10">

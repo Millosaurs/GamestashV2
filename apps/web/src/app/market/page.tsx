@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/collapsible";
 import { useQuery } from "@tanstack/react-query";
 import { orpc } from "@/utils/orpc";
+import { Header } from "@/components/header";
 
 const SORT_OPTIONS = [
   { value: "featured" as const, label: "Featured First" },
@@ -529,15 +530,55 @@ export default function MarketPage() {
   ]);
 
   return (
-    <div className="flex h-screen bg-background pt-20">
-      {/* Mobile Filter Overlay */}
-      {showFilters && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-            onClick={() => setShowFilters(false)}
-          />
-          <div className="absolute left-0 top-0 h-full w-80 bg-background border-r p-6 overflow-y-auto">
+    <>
+      <Header />
+      <div className="flex h-screen bg-background pt-20">
+        {/* Mobile Filter Overlay */}
+        {showFilters && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <div
+              className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+              onClick={() => setShowFilters(false)}
+            />
+            <div className="absolute left-0 top-0 h-full w-80 bg-background border-r p-6 overflow-y-auto">
+              <FilterSidebar
+                platforms={PLATFORMS}
+                platformsLoading={platformsLoading}
+                platformsError={platformsError}
+                categoriesLoading={
+                  allCategoriesLoading || selectedCategoriesLoading
+                }
+                categoriesError={allCategoriesError}
+                selectedPlatform={selectedPlatform}
+                setSelectedPlatform={setSelectedPlatform}
+                selectedCategory={selectedCategory}
+                setSelectedCategory={setSelectedCategory}
+                priceRange={priceRange}
+                setPriceRange={setPriceRange}
+                minPrice={PRICE_MIN}
+                maxPrice={PRICE_MAX}
+                showDiscounted={showDiscounted}
+                setShowDiscounted={setShowDiscounted}
+                selectedTags={selectedTags}
+                setSelectedTags={setSelectedTags}
+                availableTags={availableTags}
+                tagsLoading={tagsLoading}
+                onClose={() => setShowFilters(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:flex w-80 shrink-0 flex-col border-r bg-background">
+          <div className="border-0 p-6 pt-10">
+            <h1 className="text-2xl font-bold text-foreground">Market</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Discover premium digital products
+            </p>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6">
             <FilterSidebar
               platforms={PLATFORMS}
               platformsLoading={platformsLoading}
@@ -560,246 +601,209 @@ export default function MarketPage() {
               setSelectedTags={setSelectedTags}
               availableTags={availableTags}
               tagsLoading={tagsLoading}
-              onClose={() => setShowFilters(false)}
             />
           </div>
-        </div>
-      )}
+        </aside>
 
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-80 shrink-0 flex-col border-r bg-background">
-        <div className="border-0 p-6 pt-10">
-          <h1 className="text-2xl font-bold text-foreground">Market</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Discover premium digital products
-          </p>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6">
-          <FilterSidebar
-            platforms={PLATFORMS}
-            platformsLoading={platformsLoading}
-            platformsError={platformsError}
-            categoriesLoading={
-              allCategoriesLoading || selectedCategoriesLoading
-            }
-            categoriesError={allCategoriesError}
-            selectedPlatform={selectedPlatform}
-            setSelectedPlatform={setSelectedPlatform}
-            selectedCategory={selectedCategory}
-            setSelectedCategory={setSelectedCategory}
-            priceRange={priceRange}
-            setPriceRange={setPriceRange}
-            minPrice={PRICE_MIN}
-            maxPrice={PRICE_MAX}
-            showDiscounted={showDiscounted}
-            setShowDiscounted={setShowDiscounted}
-            selectedTags={selectedTags}
-            setSelectedTags={setSelectedTags}
-            availableTags={availableTags}
-            tagsLoading={tagsLoading}
-          />
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex flex-1 flex-col overflow-hidden">
-        {/* Header */}
-        <div className="border-b bg-background p-4 lg:p-6">
-          <div className="flex flex-col gap-4 lg:hidden mb-4">
-            <h1 className="text-2xl font-bold text-foreground">Market</h1>
-            <p className="text-sm text-muted-foreground">
-              Discover premium digital products
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* Search */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+        {/* Main Content */}
+        <main className="flex flex-1 flex-col overflow-hidden">
+          {/* Header */}
+          <div className="border-b bg-background p-4 lg:p-6">
+            <div className="flex flex-col gap-4 lg:hidden mb-4">
+              <h1 className="text-2xl font-bold text-foreground">Market</h1>
+              <p className="text-sm text-muted-foreground">
+                Discover premium digital products
+              </p>
             </div>
 
-            {/* Controls */}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFilters(true)}
-                className="gap-2 lg:hidden"
-              >
-                <Filter className="size-4" />
-                Filters
-              </Button>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
 
-              <Button variant="default" size="sm" className="px-3">
-                <Grid3X3 className="size-4" />
-              </Button>
+              {/* Controls */}
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFilters(true)}
+                  className="gap-2 lg:hidden"
+                >
+                  <Filter className="size-4" />
+                  Filters
+                </Button>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-40 justify-between"
-                  >
-                    {currentSortLabel}
-                    <ChevronRight className="size-4 -rotate-90 opacity-70" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  {SORT_OPTIONS.map((option) => (
-                    <DropdownMenuItem
-                      key={option.value}
-                      onSelect={() => setSortBy(option.value)}
+                <Button variant="default" size="sm" className="px-3">
+                  <Grid3X3 className="size-4" />
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-40 justify-between"
                     >
-                      {option.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                      {currentSortLabel}
+                      <ChevronRight className="size-4 -rotate-90 opacity-70" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    {SORT_OPTIONS.map((option) => (
+                      <DropdownMenuItem
+                        key={option.value}
+                        onSelect={() => setSortBy(option.value)}
+                      >
+                        {option.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
+            {/* Results Count */}
+            <div className="flex items-center justify-between mt-4">
+              <p className="text-sm text-muted-foreground">
+                {productsLoading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="size-3 animate-spin" />
+                    Loading products...
+                  </span>
+                ) : (
+                  <>
+                    {products.length} products found
+                    {selectedPlatform !== "all" && (
+                      <span className="ml-1">
+                        in{" "}
+                        {PLATFORMS.find((p) => p.id === selectedPlatform)?.name}
+                      </span>
+                    )}
+                    {selectedCategory !== "all" && (
+                      <span className="ml-1">
+                        •{" "}
+                        {
+                          PLATFORMS.find(
+                            (p) => p.id === selectedPlatform
+                          )?.categories.find((c) => c.id === selectedCategory)
+                            ?.name
+                        }
+                      </span>
+                    )}
+                  </>
+                )}
+              </p>
             </div>
           </div>
 
-          {/* Results Count */}
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-muted-foreground">
-              {productsLoading ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="size-3 animate-spin" />
-                  Loading products...
-                </span>
-              ) : (
-                <>
-                  {products.length} products found
-                  {selectedPlatform !== "all" && (
-                    <span className="ml-1">
-                      in{" "}
-                      {PLATFORMS.find((p) => p.id === selectedPlatform)?.name}
-                    </span>
-                  )}
-                  {selectedCategory !== "all" && (
-                    <span className="ml-1">
-                      •{" "}
-                      {
-                        PLATFORMS.find(
-                          (p) => p.id === selectedPlatform
-                        )?.categories.find((c) => c.id === selectedCategory)
-                          ?.name
-                      }
-                    </span>
-                  )}
-                </>
-              )}
-            </p>
+          {/* Products Content */}
+          <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+            {productsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="flex items-center gap-3 text-muted-foreground">
+                  <Loader2 className="size-6 animate-spin" />
+                  <span>Loading products...</span>
+                </div>
+              </div>
+            ) : productsError ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-muted p-6">
+                  <AlertCircle className="size-8 text-destructive" />
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-foreground">
+                  Error loading products
+                </h3>
+                <p className="mt-2 text-muted-foreground max-w-md">
+                  There was an error loading the products. Please try again.
+                </p>
+                <pre className="mt-2 text-xs text-destructive bg-muted p-2 rounded">
+                  {JSON.stringify(productsError, null, 2)}
+                </pre>
+              </div>
+            ) : products.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+                {products.map((product, index) => {
+                  const badges = [];
+                  if (product.isNew)
+                    badges.push({
+                      text: "New",
+                      variant: "default" as const,
+                      className: "bg-blue-600 text-white",
+                    });
+                  if (product.isFeatured)
+                    badges.push({
+                      text: "Featured",
+                      variant: "secondary" as const,
+                    });
+                  if (product.discount > 0)
+                    badges.push({
+                      text: `-${product.discount}%`,
+                      variant: "destructive" as const,
+                    });
+
+                  const uniqueKey = product.id
+                    ? `${product.id}-${index}`
+                    : `product-${index}`;
+
+                  return (
+                    <OverlayCard
+                      key={uniqueKey}
+                      image={product.image}
+                      imageAlt={product.name}
+                      title={product.name}
+                      description={product.description}
+                      author={product.author}
+                      price={product.price === 0 ? "Free" : `$${product.price}`}
+                      rating={product.rating}
+                      sold={product.sold}
+                      badges={badges}
+                      href={`/product/${product.slug || product.id}`}
+                      ctaText={product.price === 0 ? "Download" : "Add to Cart"}
+                      className="h-fit"
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-muted p-6">
+                  <Search className="size-8 text-muted-foreground" />
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-foreground">
+                  No products found
+                </h3>
+                <p className="mt-2 text-muted-foreground max-w-md">
+                  Try adjusting your search or filter criteria to find what
+                  you're looking for.
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedPlatform("all");
+                    setSelectedCategory("all");
+                    const min = PRICE_MIN || 0;
+                    const max = PRICE_MAX || 100;
+                    setPriceRange([min, max]);
+                    setShowDiscounted(false);
+                    setSelectedTags([]);
+                  }}
+                >
+                  Clear all filters
+                </Button>
+              </div>
+            )}
           </div>
-        </div>
-
-        {/* Products Content */}
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-          {productsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-3 text-muted-foreground">
-                <Loader2 className="size-6 animate-spin" />
-                <span>Loading products...</span>
-              </div>
-            </div>
-          ) : productsError ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-6">
-                <AlertCircle className="size-8 text-destructive" />
-              </div>
-              <h3 className="mt-4 text-lg font-semibold text-foreground">
-                Error loading products
-              </h3>
-              <p className="mt-2 text-muted-foreground max-w-md">
-                There was an error loading the products. Please try again.
-              </p>
-              <pre className="mt-2 text-xs text-destructive bg-muted p-2 rounded">
-                {JSON.stringify(productsError, null, 2)}
-              </pre>
-            </div>
-          ) : products.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-              {products.map((product, index) => {
-                const badges = [];
-                if (product.isNew)
-                  badges.push({
-                    text: "New",
-                    variant: "default" as const,
-                    className: "bg-blue-600 text-white",
-                  });
-                if (product.isFeatured)
-                  badges.push({
-                    text: "Featured",
-                    variant: "secondary" as const,
-                  });
-                if (product.discount > 0)
-                  badges.push({
-                    text: `-${product.discount}%`,
-                    variant: "destructive" as const,
-                  });
-
-                const uniqueKey = product.id
-                  ? `${product.id}-${index}`
-                  : `product-${index}`;
-
-                return (
-                  <OverlayCard
-                    key={uniqueKey}
-                    image={product.image}
-                    imageAlt={product.name}
-                    title={product.name}
-                    description={product.description}
-                    author={product.author}
-                    price={product.price === 0 ? "Free" : `$${product.price}`}
-                    rating={product.rating}
-                    sold={product.sold}
-                    badges={badges}
-                    href={`/product/${product.slug || product.id}`}
-                    ctaText={product.price === 0 ? "Download" : "Add to Cart"}
-                    className="h-fit"
-                  />
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-muted p-6">
-                <Search className="size-8 text-muted-foreground" />
-              </div>
-              <h3 className="mt-4 text-lg font-semibold text-foreground">
-                No products found
-              </h3>
-              <p className="mt-2 text-muted-foreground max-w-md">
-                Try adjusting your search or filter criteria to find what you're
-                looking for.
-              </p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedPlatform("all");
-                  setSelectedCategory("all");
-                  const min = PRICE_MIN || 0;
-                  const max = PRICE_MAX || 100;
-                  setPriceRange([min, max]);
-                  setShowDiscounted(false);
-                  setSelectedTags([]);
-                }}
-              >
-                Clear all filters
-              </Button>
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </>
   );
 }

@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Header } from "@/components/header";
 
 // export const metadata: Metadata = {
 //   title: "Top Developers | GameStash",
@@ -731,41 +732,44 @@ export default function DevelopersPage() {
   }, [search, category, sortBy]);
 
   return (
-    <div className="min-h-screen bg-background pt-20">
-      <div className="mx-auto px-6 md:px-10 lg:px-12 max-w-screen-2xl py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
-            Top Developers
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
-            Discover talented developers and creators building amazing digital
-            experiences on GameStash marketplace. From game developers to AI
-            engineers.
-          </p>
-        </div>
-
-        {/* Stats */}
-        <DeveloperStats />
-
-        {/* Filters */}
-        <DeveloperFilters
-          search={search}
-          setSearch={setSearch}
-          category={category}
-          setCategory={setCategory}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-        />
-
-        {/* Developer Grids */}
-        <Suspense fallback={<DeveloperGridSkeleton />}>
-          <div className="space-y-16">
-            <FeaturedDevelopersGrid developers={filteredAndSorted} />
-            <AllDevelopersGrid developers={filteredAndSorted} />
+    <>
+      <Header />
+      <div className="min-h-screen bg-background pt-20">
+        <div className="mx-auto px-6 md:px-10 lg:px-12 max-w-screen-2xl py-8">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+              Top Developers
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
+              Discover talented developers and creators building amazing digital
+              experiences on GameStash marketplace. From game developers to AI
+              engineers.
+            </p>
           </div>
-        </Suspense>
+
+          {/* Stats */}
+          <DeveloperStats />
+
+          {/* Filters */}
+          <DeveloperFilters
+            search={search}
+            setSearch={setSearch}
+            category={category}
+            setCategory={setCategory}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+          />
+
+          {/* Developer Grids */}
+          <Suspense fallback={<DeveloperGridSkeleton />}>
+            <div className="space-y-16">
+              <FeaturedDevelopersGrid developers={filteredAndSorted} />
+              <AllDevelopersGrid developers={filteredAndSorted} />
+            </div>
+          </Suspense>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
