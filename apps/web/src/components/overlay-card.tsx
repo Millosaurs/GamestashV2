@@ -75,14 +75,6 @@ export function OverlayCard({
   const CardWrapper: any = href ? Link : "div";
   const wrapperProps = href ? { href } : onClick ? { onClick } : {};
 
-  // Extract first sentence from description
-  const getFirstSentence = (text: string) => {
-    if (!text) return "";
-    // Split by sentence-ending punctuation and take the first sentence
-    const sentences = text.split(/[.!?]+/);
-    return sentences[0].trim() + (sentences.length > 1 ? "." : "");
-  };
-
   const renderBadge = (badge: BadgeConfig, index: number) => {
     return (
       <Badge
@@ -101,8 +93,8 @@ export function OverlayCard({
       <div className="flex-1 min-w-0">
         <h3 className="font-semibold text-sm truncate mb-1">{title}</h3>
         {description && (
-          <p className="text-xs text-muted-foreground mb-1">
-            {getFirstSentence(description)}
+          <p className="text-xs text-muted-foreground mb-1 truncate">
+            {description}
           </p>
         )}
         <div className="flex items-center gap-2">
