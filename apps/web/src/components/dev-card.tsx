@@ -31,6 +31,7 @@ export interface Developer {
   avatar: string;
   bio: string;
   location?: string;
+  banner: string;
   joinedDate: string;
   rating: number;
   totalProjects: number;
@@ -58,12 +59,12 @@ export function DeveloperCard({
   ...props
 }: DeveloperCardProps) {
   // Get first sentence from bio
- const getFirstSentence = (text: string) => {
-   if (!text) return "";
-   const sentences = text.split(/[.!?]+/);
-   const first = sentences[0].trim() + (sentences.length > 1 ? "." : "");
-   return first.length > 50 ? first.slice(0, 50).trimEnd() + "…" : first;
- };
+  const getFirstSentence = (text: string) => {
+    if (!text) return "";
+    const sentences = text.split(/[.!?]+/);
+    const first = sentences[0].trim() + (sentences.length > 1 ? "." : "");
+    return first.length > 50 ? first.slice(0, 50).trimEnd() + "…" : first;
+  };
 
   // Create badges array from specialties and status
   const badges = [
@@ -92,16 +93,13 @@ export function DeveloperCard({
       >
         {/* Main Image Container - 16:9 Aspect Ratio */}
         <div className="relative aspect-video rounded-lg overflow-hidden border">
-          {/* Developer Avatar as Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5">
-            {/* Pattern overlay for visual interest */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-4 left-4 w-16 h-16 border-2 border-primary/30 rounded-full"></div>
-              <div className="absolute top-8 right-8 w-12 h-12 border border-primary/20 rounded-lg rotate-45"></div>
-              <div className="absolute bottom-6 left-8 w-8 h-8 border border-primary/20 rounded-full"></div>
-              <div className="absolute bottom-8 right-6 w-6 h-6 bg-primary/20 rounded-full"></div>
-            </div>
-          </div>
+          {/* Banner Image */}
+          <Image
+            src={developer.banner}
+            alt={`${developer.name} banner`}
+            fill
+            className="object-cover"
+          />
 
           {/* Large Avatar in Center */}
           <div className="absolute inset-0 flex items-center justify-center bottom-36">
@@ -176,7 +174,7 @@ export function DeveloperCard({
         </div>
 
         {/* Pinned Overlay Card */}
-        <div className="absolute left-4 right-4 -bottom-4 z-30 ">
+        <div className="absolute left-4 right-4 -bottom-20 z-30 ">
           <Card
             className={cn(
               "transition-all duration-300",
@@ -189,8 +187,8 @@ export function DeveloperCard({
                   <h3 className="font-semibold text-sm truncate mb-1">
                     {developer.name}
                   </h3>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {getFirstSentence(developer.bio)}
+                  <p className="text-xs text-muted-foreground mb-2 truncate">
+                    {developer.bio}
                   </p>
 
                   {/* Stats Row */}

@@ -21,7 +21,8 @@
 	"dependencies": {
 		"@orpc/client": "^1.8.5",
 		"@orpc/server": "^1.8.5",
-		"@orpc/tanstack-query": "^1.8.5"
+		"@orpc/tanstack-query": "^1.8.5",
+		"@remixicon/react": "^4.6.0"
 	},
 	"devDependencies": {
 		"turbo": "^2.5.4",
