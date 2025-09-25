@@ -36,7 +36,8 @@ const DiscordIcon = ({ className }: { className?: string }) => (
 
 export default function AuthPage() {
   const [loading, setLoading] = React.useState(false);
-
+  const route = "dashboard";
+  const callbackURL = `${process.env.NEXT_PUBLIC_CLIENT_URL}/${route}`;
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left Panel - Branding */}
@@ -108,8 +109,7 @@ export default function AuthPage() {
                 await signIn.social(
                   {
                     provider: "google",
-
-                    callbackURL: "/dashboard",
+                    callbackURL: callbackURL,
                   },
 
                   {
@@ -142,8 +142,7 @@ export default function AuthPage() {
                 await signIn.social(
                   {
                     provider: "discord",
-
-                    callbackURL: "/dashboard",
+                    callbackURL: callbackURL,
                   },
 
                   {

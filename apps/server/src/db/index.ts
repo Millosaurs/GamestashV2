@@ -7,14 +7,14 @@ if (!databaseUrl) {
   throw new Error("DATABASE_URL environment variable is required");
 }
 
-console.log("Initializing database connection pool...");
-console.log(
-  "Database URL format check:",
-  databaseUrl.startsWith("postgres://") ||
-    databaseUrl.startsWith("postgresql://")
-    ? "✓ Valid format"
-    : "✗ Invalid format"
-);
+// console.log("Initializing database connection pool...");
+// console.log(
+//   "Database URL format check:",
+//   databaseUrl.startsWith("postgres://") ||
+//     databaseUrl.startsWith("postgresql://")
+//     ? "✓ Valid format"
+//     : "✗ Invalid format"
+// );
 
 // Create a connection pool with proper timeout settings
 const pool = new Pool({
