@@ -591,7 +591,9 @@ export default function Dashboard() {
               onClick={async () => {
                 await signOut();
               }}
-            ></Button>
+            >
+              Logout
+            </Button>
             <p className="text-muted-foreground mt-2">
               {userRole === "both"
                 ? "Manage your purchases and products all in one place"
