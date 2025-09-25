@@ -125,7 +125,7 @@ const mockPurchases: Purchase[] = [
   {
     id: "1",
     productName: "Minecraft Resource Pack - Medieval",
-    productImage: "/api/placeholder/64/64",
+    productImage: "placeholder.svg",
     price: 12.99,
     purchaseDate: "2024-01-15",
     status: "completed",
@@ -133,7 +133,7 @@ const mockPurchases: Purchase[] = [
   {
     id: "2",
     productName: "Roblox Script - Auto Farm",
-    productImage: "/api/placeholder/64/64",
+    productImage: "placeholder.svg",
     price: 25.0,
     purchaseDate: "2024-01-10",
     status: "completed",
@@ -554,7 +554,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!session && !isPending) {
-      router.push("/login");
+      router.push("/auth");
     }
   }, [session, isPending]);
 
