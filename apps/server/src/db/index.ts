@@ -18,6 +18,7 @@ if (!databaseUrl) {
 
 // Create a connection pool with proper timeout settings
 const pool = new Pool({
+  ssl: { rejectUnauthorized: false },
   connectionString: databaseUrl,
   idleTimeoutMillis: 10000,
   keepAliveInitialDelayMillis: 0,

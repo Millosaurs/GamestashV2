@@ -39,7 +39,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tabler/icons-react": "^3.34.1",
     "@tanstack/react-form": "^1.12.3",
-    "@tanstack/react-query": "^5.85.5",
+    "@tanstack/react-query": "^5.90.2",
     "better-auth": "^1.3.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -61,17 +61,19 @@
     "recharts": "2.15.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
+    "ts": "^0.2.2",
+    "tsc": "^2.0.4",
     "tw-animate-css": "^1.3.4",
     "vaul": "^1.1.2",
     "zod": "^4.1.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.10",
-    "@types/node": "^20",
+    "@types/node": "^24.5.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4.1.10",
-    "typescript": "^5",
-    "@tanstack/react-query-devtools": "^5.85.5"
+    "typescript": "^5.9.2",
+    "@tanstack/react-query-devtools": "^5.90.2"
   }
 }

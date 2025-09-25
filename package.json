@@ -22,7 +22,9 @@
 		"@orpc/client": "^1.8.5",
 		"@orpc/server": "^1.8.5",
 		"@orpc/tanstack-query": "^1.8.5",
-		"@remixicon/react": "^4.6.0"
+		"@remixicon/react": "^4.6.0",
+		"ts": "^0.2.2",
+		"typescript": "^5.9.2"
 	},
 	"devDependencies": {
 		"turbo": "^2.5.4",

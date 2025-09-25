@@ -52,12 +52,14 @@ import {
 import { Badge as UIBadge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { authClient } from "@/lib/auth-client";
+import { authClient, signOut } from "@/lib/auth-client";
 import { useQuery } from "@tanstack/react-query";
 import { orpc } from "@/utils/orpc";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Header } from "@/components/header";
+import { apiKey } from "better-auth/plugins";
+import { auth } from "../../../../server/src/lib/auth";
 
 // Types for dashboard data
 interface UserStats {
@@ -585,6 +587,11 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-foreground">
               Welcome back, {session.user.name}!
             </h1>
+            <Button
+              onClick={async () => {
+                await signOut();
+              }}
+            ></Button>
             <p className="text-muted-foreground mt-2">
               {userRole === "both"
                 ? "Manage your purchases and products all in one place"
