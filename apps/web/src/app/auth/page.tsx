@@ -2,10 +2,9 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { Loader2, ArrowLeft } from "lucide-react";
-import router from "next/router";
 import Link from "next/link";
+import { signIn } from "@/lib/auth-client";
 
 // Custom icons for OAuth providers
 const GoogleIcon = ({ className }: { className?: string }) => (
@@ -36,19 +35,7 @@ const DiscordIcon = ({ className }: { className?: string }) => (
 );
 
 export default function AuthPage() {
-  const [isLoading, setIsLoading] = React.useState<string | null>(null);
-
-  const handleOAuthLogin = async (provider: "google" | "discord") => {
-    setIsLoading(provider);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // In a real app, you would redirect to the OAuth provider
-    // window.location.href = `/auth/${provider}`;
-
-    setIsLoading(null);
-  };
+  const [loading, setLoading] = React.useState(false);
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -117,10 +104,28 @@ export default function AuthPage() {
               variant="outline"
               size="lg"
               className="w-full h-12 gap-3 text-base font-medium border-2 hover:bg-accent/50 transition-colors"
-              onClick={() => handleOAuthLogin("google")}
-              disabled={isLoading !== null}
+              onClick={async () => {
+                await signIn.social(
+                  {
+                    provider: "google",
+
+                    callbackURL: "/dashboard",
+                  },
+
+                  {
+                    onRequest: (ctx) => {
+                      setLoading(true);
+                    },
+
+                    onResponse: (ctx) => {
+                      setLoading(false);
+                    },
+                  }
+                );
+              }}
+              disabled={loading}
             >
-              {isLoading === "google" ? (
+              {loading ? (
                 <Loader2 className="size-5 animate-spin" />
               ) : (
                 <GoogleIcon className="size-5" />
@@ -133,10 +138,28 @@ export default function AuthPage() {
               variant="outline"
               size="lg"
               className="w-full h-12 gap-3 text-base font-medium border-2 hover:bg-accent/50 transition-colors"
-              onClick={() => handleOAuthLogin("discord")}
-              disabled={isLoading !== null}
+              onClick={async () => {
+                await signIn.social(
+                  {
+                    provider: "discord",
+
+                    callbackURL: "/dashboard",
+                  },
+
+                  {
+                    onRequest: (ctx) => {
+                      setLoading(true);
+                    },
+
+                    onResponse: (ctx) => {
+                      setLoading(false);
+                    },
+                  }
+                );
+              }}
+              disabled={loading}
             >
-              {isLoading === "discord" ? (
+              {loading ? (
                 <Loader2 className="size-5 animate-spin" />
               ) : (
                 <DiscordIcon className="size-5 text-[#5865F2]" />
