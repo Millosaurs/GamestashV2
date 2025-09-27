@@ -29,7 +29,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/animate-ui/components/radix/dropdown-menu";
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -385,23 +385,14 @@ function LoadingScreen({ progress }: { progress: number }) {
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-background space-y-6">
       <div className="text-center space-y-4">
-        <h1 className="text-3xl font-bold text-foreground">Market</h1>
-        <p className="text-muted-foreground">
-          Loading premium digital products...
-        </p>
+        <p className="text-muted-foreground">Loading products...</p>
       </div>
 
       <div className="w-full max-w-md space-y-2">
         <Progress value={progress} className="w-full" />
         <div className="flex justify-between text-sm text-muted-foreground">
           <span>{progress}%</span>
-          <span>Loading products...</span>
         </div>
-      </div>
-
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="size-4 animate-spin" />
-        <span>Fetching data from cache...</span>
       </div>
     </div>
   );
@@ -762,7 +753,7 @@ export default function MarketPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-40 justify-between"
+                      className="w-40 justify-between "
                     >
                       {currentSortLabel}
                       <ChevronRight className="size-4 -rotate-90 opacity-70" />

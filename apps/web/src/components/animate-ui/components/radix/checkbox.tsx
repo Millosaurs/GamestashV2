@@ -17,7 +17,7 @@ const checkboxVariants = cva(
         accent: 'bg-input',
       },
       size: {
-        default: 'size-5 rounded-sm',
+        default: 'size-5 rounded-lg',
         sm: 'size-4.5 rounded-[5px]',
         lg: 'size-6 rounded-[7px]',
       },

@@ -20,6 +20,7 @@ import {
   Award,
   Loader2,
   AlertCircle,
+  ArrowLeft,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ import { orpc } from "@/utils/orpc";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Header } from "@/components/header";
+import Link from "next/link";
 
 // Types for dashboard data
 interface UserStats {
@@ -500,10 +502,12 @@ function DeveloperDashboard({ userId }: { userId: string }) {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button className="w-full justify-start" variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              Create New Product
-            </Button>
+            <Link href="/dashboard/products">
+              <Button className="w-full justify-start" variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                Create New Product
+              </Button>
+            </Link>
             <Button className="w-full justify-start" variant="outline">
               <BarChart3 className="mr-2 h-4 w-4" />
               View Analytics
@@ -720,6 +724,16 @@ export default function Dashboard() {
         <div className="container mx-auto p-6">
           {/* Header */}
           <div className="mb-8">
+            <Link href="/market">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2 text-muted-foreground hover:text-foreground -ml-2 "
+              >
+                <ArrowLeft className="size-4" />
+                Back to Market
+              </Button>
+            </Link>
             <h1 className="text-3xl font-bold text-foreground">
               Welcome back, {session.user.name}!
             </h1>
