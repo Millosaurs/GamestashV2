@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRef, useEffect, useImperativeHandle, forwardRef } from "react";
 import { motion, type Transition, type HTMLMotionProps } from "motion/react";
 
 import {
@@ -155,34 +154,35 @@ type TabsTriggerProps = WithAsChild<
   } & HTMLMotionProps<"button">
 >;
 
-const TabsTrigger = forwardRef<HTMLButtonElement, TabsTriggerProps>(
-  ({ value, asChild = false, ...props }, ref) => {
-    const { activeValue, handleValueChange, registerTrigger } = useTabs();
-    const localRef = useRef<HTMLButtonElement | null>(null);
+function TabsTrigger({
+  ref,
+  value,
+  asChild = false,
+  ...props
+}: TabsTriggerProps) {
+  const { activeValue, handleValueChange, registerTrigger } = useTabs();
 
-    useEffect(() => {
-      registerTrigger(value, localRef.current);
-      return () => {
-        registerTrigger(value, null);
-      };
-    }, [value, registerTrigger]);
+  const localRef = React.useRef<HTMLButtonElement | null>(null);
+  React.useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
 
-    useImperativeHandle(ref, () => localRef.current as HTMLButtonElement);
+  React.useEffect(() => {
+    registerTrigger(value, localRef.current);
+    return () => registerTrigger(value, null);
+  }, [value, registerTrigger]);
 
-    const Component = asChild ? Slot : motion.button;
+  const Component = asChild ? Slot : motion.button;
 
-    return (
-      <Component
-        ref={localRef}
-        data-slot="tabs-trigger"
-        role="tab"
-        onClick={() => handleValueChange(value)}
-        data-state={activeValue === value ? "active" : "inactive"}
-        {...props}
-      />
-    );
-  }
-);
+  return (
+    <Component
+      ref={localRef}
+      data-slot="tabs-trigger"
+      role="tab"
+      onClick={() => handleValueChange(value)}
+      data-state={activeValue === value ? "active" : "inactive"}
+      {...props}
+    />
+  );
+}
 
 type TabsContentsProps = HTMLMotionProps<"div"> & {
   children: React.ReactNode;

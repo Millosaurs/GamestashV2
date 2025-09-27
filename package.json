@@ -1,36 +1,34 @@
 {
-	"name": "gamestashv2",
-	"private": true,
-	"workspaces": [
-		"apps/*",
-		"packages/*"
-	],
-	"scripts": {
-		"check": "oxlint",
-		"dev": "turbo dev",
-		"build": "turbo build",
-		"check-types": "turbo check-types",
-		"dev:native": "turbo -F native dev",
-		"dev:web": "turbo -F web dev",
-		"dev:server": "turbo -F server dev",
-		"db:push": "turbo -F server db:push",
-		"db:studio": "turbo -F server db:studio",
-		"db:generate": "turbo -F server db:generate",
-		"db:migrate": "turbo -F server db:migrate"
-	},
-	"dependencies": {
-		"@orpc/client": "^1.8.5",
-		"@orpc/server": "^1.8.5",
-		"@orpc/tanstack-query": "^1.8.5",
-		"@remixicon/react": "^4.6.0",
-		"ts": "^0.2.2",
-		"typescript": "^5.9.2"
-	},
-	"devDependencies": {
-		"@types/react": "^19.1.13",
-		"@types/react-dom": "^19.1.9",
-		"oxlint": "^1.12.0",
-		"turbo": "^2.5.4"
-	},
-	"packageManager": "bun@1.2.20"
+  "name": "gamestashv2",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "check": "oxlint",
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:native": "turbo -F native dev",
+    "dev:web": "turbo -F web dev",
+    "dev:server": "turbo -F server dev",
+    "db:push": "turbo -F server db:push",
+    "db:studio": "turbo -F server db:studio",
+    "db:generate": "turbo -F server db:generate",
+    "db:migrate": "turbo -F server db:migrate"
+  },
+  "dependencies": {
+    "@orpc/client": "^1.8.5",
+    "@orpc/server": "^1.8.5",
+    "@orpc/tanstack-query": "^1.8.5",
+    "@remixicon/react": "^4.6.0",
+    "ts": "^0.2.2",
+    "typescript": "^5.9.2"
+  },
+  "devDependencies": {
+    "oxlint": "^1.12.0",
+    "turbo": "^2.5.4"
+  },
+  "packageManager": "bun@1.2.20"
 }
