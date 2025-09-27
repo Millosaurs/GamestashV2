@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/animate-ui/components/buttons/button";
 import {
   Card,
   CardContent,
@@ -32,7 +32,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge as UIBadge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Import animated tabs instead of regular tabs
+import {
+  Tabs,
+  TabsContent,
+  TabsContents,
+  TabsList,
+  TabsTrigger,
+} from "@/components/animate-ui/components/animate/tabs";
 import { Progress } from "@/components/ui/progress";
 import { authClient, signOut } from "@/lib/auth-client";
 import { useQuery } from "@tanstack/react-query";
@@ -207,7 +214,7 @@ function UserDashboard({ userId }: { userId: string }) {
         </Card>
       </div>
 
-      {/* Content Tabs */}
+      {/* Content Tabs - Updated with animated tabs */}
       <Tabs defaultValue="purchases" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="purchases">Recent Purchases</TabsTrigger>
@@ -215,137 +222,141 @@ function UserDashboard({ userId }: { userId: string }) {
           <TabsTrigger value="favorites">Favorites</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="purchases" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Purchases</CardTitle>
-              <CardDescription>
-                Your latest product acquisitions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {purchasesLoading ? (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" />
-                  Loading purchases...
-                </div>
-              ) : purchasesError ? (
-                <p className="text-sm text-destructive">
-                  Failed to load purchases
-                </p>
-              ) : purchases.length > 0 ? (
-                <div className="space-y-4">
-                  {purchases.map((purchase) => (
-                    <div
-                      key={purchase.id}
-                      className="flex items-center space-x-4"
-                    >
-                      <img
-                        src={purchase.productImage}
-                        alt={purchase.productName}
-                        className="h-12 w-12 rounded-lg object-cover"
-                      />
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium leading-none">
-                          {purchase.productName}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(purchase.purchaseDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="text-sm font-medium">
-                        ${purchase.price.toFixed(2)}
-                      </div>
-                      <UIBadge
-                        variant={
-                          purchase.status === "completed"
-                            ? "default"
-                            : "secondary"
-                        }
+        <Card className="shadow-none py-0">
+          <TabsContents className="py-6">
+            <TabsContent value="purchases" className="space-y-4">
+              <CardHeader>
+                <CardTitle>Recent Purchases</CardTitle>
+                <CardDescription>
+                  Your latest product acquisitions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {purchasesLoading ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin" />
+                    Loading purchases...
+                  </div>
+                ) : purchasesError ? (
+                  <p className="text-sm text-destructive">
+                    Failed to load purchases
+                  </p>
+                ) : purchases.length > 0 ? (
+                  <div className="space-y-4">
+                    {purchases.map((purchase) => (
+                      <div
+                        key={purchase.id}
+                        className="flex items-center space-x-4"
                       >
-                        {purchase.status}
-                      </UIBadge>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No purchases yet.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="reviews" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>My Reviews</CardTitle>
-              <CardDescription>
-                Reviews you've left for products
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {reviewsLoading ? (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" />
-                  Loading reviews...
-                </div>
-              ) : reviewsError ? (
-                <p className="text-sm text-destructive">
-                  Failed to load reviews
-                </p>
-              ) : reviews.length > 0 ? (
-                <div className="space-y-4">
-                  {reviews.map((review) => (
-                    <div key={review.id} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium">
-                          {review.productName}
-                        </p>
-                        <div className="flex items-center space-x-1">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star
-                              key={i}
-                              className={cn(
-                                "h-4 w-4",
-                                i < review.rating
-                                  ? "text-yellow-400 fill-yellow-400"
-                                  : "text-gray-300"
-                              )}
-                            />
-                          ))}
+                        <img
+                          src={purchase.productImage}
+                          alt={purchase.productName}
+                          className="h-12 w-12 rounded-lg object-cover"
+                        />
+                        <div className="flex-1 space-y-1">
+                          <p className="text-sm font-medium leading-none">
+                            {purchase.productName}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(
+                              purchase.purchaseDate
+                            ).toLocaleDateString()}
+                          </p>
                         </div>
+                        <div className="text-sm font-medium">
+                          ${purchase.price.toFixed(2)}
+                        </div>
+                        <UIBadge
+                          variant={
+                            purchase.status === "completed"
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
+                          {purchase.status}
+                        </UIBadge>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {review.comment}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(review.date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No reviews yet.</p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No purchases yet.
+                  </p>
+                )}
+              </CardContent>
+            </TabsContent>
 
-        <TabsContent value="favorites" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Favorite Products</CardTitle>
-              <CardDescription>Products you've saved for later</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Your favorite products will appear here.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            <TabsContent value="reviews" className="space-y-4">
+              <CardHeader>
+                <CardTitle>My Reviews</CardTitle>
+                <CardDescription>
+                  Reviews you've left for products
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {reviewsLoading ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin" />
+                    Loading reviews...
+                  </div>
+                ) : reviewsError ? (
+                  <p className="text-sm text-destructive">
+                    Failed to load reviews
+                  </p>
+                ) : reviews.length > 0 ? (
+                  <div className="space-y-4">
+                    {reviews.map((review) => (
+                      <div key={review.id} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium">
+                            {review.productName}
+                          </p>
+                          <div className="flex items-center space-x-1">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star
+                                key={i}
+                                className={cn(
+                                  "h-4 w-4",
+                                  i < review.rating
+                                    ? "text-yellow-400 fill-yellow-400"
+                                    : "text-gray-300"
+                                )}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {review.comment}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(review.date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No reviews yet.
+                  </p>
+                )}
+              </CardContent>
+            </TabsContent>
+
+            <TabsContent value="favorites" className="space-y-4">
+              <CardHeader>
+                <CardTitle>Favorite Products</CardTitle>
+                <CardDescription>
+                  Products you've saved for later
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Your favorite products will appear here.
+                </p>
+              </CardContent>
+            </TabsContent>
+          </TabsContents>
+        </Card>
       </Tabs>
     </div>
   );
@@ -742,7 +753,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Role-based content */}
+          {/* Role-based content - Updated with animated tabs */}
           {userRole === "both" ? (
             <Tabs defaultValue="user" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
@@ -759,13 +770,17 @@ export default function Dashboard() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="user" className="mt-6">
-                <UserDashboard userId={session.user.id} />
-              </TabsContent>
+              <Card className="shadow-none py-0">
+                <TabsContents className="p-6">
+                  <TabsContent value="user" className="mt-6">
+                    <UserDashboard userId={session.user.id} />
+                  </TabsContent>
 
-              <TabsContent value="developer" className="mt-6">
-                <DeveloperDashboard userId={session.user.id} />
-              </TabsContent>
+                  <TabsContent value="developer" className="mt-6">
+                    <DeveloperDashboard userId={session.user.id} />
+                  </TabsContent>
+                </TabsContents>
+              </Card>
             </Tabs>
           ) : isDeveloper ? (
             <DeveloperDashboard userId={session.user.id} />

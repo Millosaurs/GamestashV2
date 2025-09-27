@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/logo";
 import { Menu, X, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/animate-ui/components/buttons/button";
 import React from "react";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/auth-client";

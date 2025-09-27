@@ -1,4 +1,4 @@
-// MarketPage.tsx - With Caching Added
+// MarketPage.tsx - With Progress Bar and Caching
 
 "use client";
 
@@ -22,7 +22,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { OverlayCard } from "@/components/overlay-card";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/animate-ui/components/buttons/button";
 import PriceSlider from "@/components/price-slider";
 import {
   DropdownMenu,
@@ -38,6 +38,8 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { orpc } from "@/utils/orpc";
 import { Header } from "@/components/header";
+import { Checkbox } from "@/components/animate-ui/components/radix/checkbox";
+import { Progress } from "@/components/animate-ui/components/radix/progress";
 
 const SORT_OPTIONS = [
   { value: "featured" as const, label: "Featured First" },
@@ -151,6 +153,12 @@ function FilterSidebar({
   React.useEffect(() => {
     setSelectedCategory("all");
   }, [selectedPlatform, setSelectedCategory]);
+
+  const [isDiscounted, setIsDiscounted] = React.useState(showDiscounted);
+
+  React.useEffect(() => {
+    setIsDiscounted(showDiscounted);
+  }, [showDiscounted]);
 
   return (
     <div className="space-y-6">
@@ -290,14 +298,22 @@ function FilterSidebar({
           <Percent className="size-3" />
           Special Offers
         </h4>
-        <div className="space-y-2">
-          <label className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showDiscounted}
-              onChange={(e) => setShowDiscounted(e.target.checked)}
-              className="rounded border-input accent-primary"
-            />
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="discounted"
+            checked={isDiscounted}
+            onCheckedChange={(val) => {
+              setIsDiscounted(val === true);
+              setShowDiscounted(val === true);
+            }}
+            variant="default"
+            size="default"
+            className="rounded-lg"
+          />
+          <label
+            htmlFor="discounted"
+            className="text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+          >
             Discounted Items Only
           </label>
         </div>
@@ -364,6 +380,33 @@ function FilterSidebar({
   );
 }
 
+// Loading Screen Component with Progress Bar
+function LoadingScreen({ progress }: { progress: number }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-screen bg-background space-y-6">
+      <div className="text-center space-y-4">
+        <h1 className="text-3xl font-bold text-foreground">Market</h1>
+        <p className="text-muted-foreground">
+          Loading premium digital products...
+        </p>
+      </div>
+
+      <div className="w-full max-w-md space-y-2">
+        <Progress value={progress} className="w-full" />
+        <div className="flex justify-between text-sm text-muted-foreground">
+          <span>{progress}%</span>
+          <span>Loading products...</span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="size-4 animate-spin" />
+        <span>Fetching data from cache...</span>
+      </div>
+    </div>
+  );
+}
+
 // Main Market Page Component
 export default function MarketPage() {
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -384,6 +427,8 @@ export default function MarketPage() {
     | "popular"
   >("featured");
   const [showFilters, setShowFilters] = React.useState(false);
+  const [loadingProgress, setLoadingProgress] = React.useState(0);
+  const [allQueriesCompleted, setAllQueriesCompleted] = React.useState(false);
 
   const currentSortLabel = React.useMemo(
     () => SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? "Sort",
@@ -392,6 +437,32 @@ export default function MarketPage() {
 
   const PRICE_MIN = 0;
   const PRICE_MAX = 500;
+
+  // Track query completion status
+  const [queriesStatus, setQueriesStatus] = React.useState({
+    platforms: false,
+    categories: false,
+    platformCategories: false,
+    tags: false,
+    products: false,
+  });
+
+  // Update progress based on completed queries
+  React.useEffect(() => {
+    const completedCount = Object.values(queriesStatus).filter(Boolean).length;
+    const totalQueries = Object.keys(queriesStatus).length;
+    const progress = Math.round((completedCount / totalQueries) * 100);
+
+    setLoadingProgress(progress);
+
+    if (progress === 100) {
+      // Small delay to show 100% progress before hiding loading screen
+      const timer = setTimeout(() => {
+        setAllQueriesCompleted(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [queriesStatus]);
 
   // Fetch platforms
   const {
@@ -470,6 +541,43 @@ export default function MarketPage() {
     staleTime: 15000, // ⭐ Cache for 15 seconds
   });
 
+  // Update query completion status
+  React.useEffect(() => {
+    setQueriesStatus((prev) => ({
+      ...prev,
+      platforms: !platformsLoading,
+    }));
+  }, [platformsLoading]);
+
+  React.useEffect(() => {
+    setQueriesStatus((prev) => ({
+      ...prev,
+      categories: !allCategoriesLoading,
+    }));
+  }, [allCategoriesLoading]);
+
+  React.useEffect(() => {
+    setQueriesStatus((prev) => ({
+      ...prev,
+      platformCategories:
+        !selectedCategoriesLoading || selectedPlatform === "all",
+    }));
+  }, [selectedCategoriesLoading, selectedPlatform]);
+
+  React.useEffect(() => {
+    setQueriesStatus((prev) => ({
+      ...prev,
+      tags: !tagsLoading,
+    }));
+  }, [tagsLoading]);
+
+  React.useEffect(() => {
+    setQueriesStatus((prev) => ({
+      ...prev,
+      products: !productsLoading,
+    }));
+  }, [productsLoading]);
+
   // Build platforms structure for FilterSidebar
   const PLATFORMS = React.useMemo(() => {
     if (platformsLoading || allCategoriesLoading || !platforms) {
@@ -528,6 +636,11 @@ export default function MarketPage() {
     allCategoriesLoading,
     products,
   ]);
+
+  // Show loading screen until all queries are complete
+  if (!allQueriesCompleted) {
+    return <LoadingScreen progress={loadingProgress} />;
+  }
 
   return (
     <>

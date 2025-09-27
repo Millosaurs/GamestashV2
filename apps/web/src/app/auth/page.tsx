@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/animate-ui/components/buttons/button";
 import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { signIn } from "@/lib/auth-client";
