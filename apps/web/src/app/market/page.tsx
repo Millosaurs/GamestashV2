@@ -234,9 +234,9 @@ function FilterSidebar({
                     )}
                     {platform.name}
                   </span>
-                  <span className="text-xs opacity-60">
+                  {/* <span className="text-xs opacity-60">
                     {platform.categories?.[0]?.count || 0}
-                  </span>
+                  </span> */}
                 </button>
               ))
             )}
@@ -280,7 +280,7 @@ function FilterSidebar({
                   )}
                 >
                   <span>{category.name}</span>
-                  <span className="text-xs opacity-60">{category.count}</span>
+                  {/* <span className="text-xs opacity-60">{category.count}</span> */}
                 </button>
               ))
             ) : (

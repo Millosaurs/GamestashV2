@@ -1,107 +1,27 @@
 // components/sections/featured-products.tsx
+"use client";
+
 import React from "react";
 import { OverlayCard } from "@/components/overlay-card";
-
-const featuredProducts = [
-  {
-    id: 1,
-    image:
-      "https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=800&h=450&fit=crop",
-    imageAlt: "Minecraft Server Setup",
-    title: "Premium Minecraft Server Setup",
-    description:
-      "Complete server setup with custom plugins and configurations for the ultimate gaming experience",
-    author: "ServerPro",
-    price: "$49",
-    rating: 4.8,
-    sold: 234,
-    href: "/products/minecraft-server",
-    badges: [
-      { text: "Featured", variant: "default" as const },
-      { text: "Best Seller", variant: "secondary" as const },
-    ],
-  },
-  {
-    id: 2,
-    image:
-      "https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&h=450&fit=crop",
-    imageAlt: "FiveM Script Pack",
-    title: "Advanced FiveM Script Collection",
-    description:
-      "Professional roleplay scripts for your FiveM server community with premium support",
-    author: "RPMaster",
-    price: "$89",
-    rating: 4.9,
-    sold: 156,
-    href: "/products/fivem-scripts",
-    badges: [{ text: "Popular", variant: "default" as const }],
-  },
-  {
-    id: 3,
-    image:
-      "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=450&fit=crop",
-    imageAlt: "Roblox Game Assets",
-    title: "Roblox Game Development Kit",
-    description:
-      "Complete asset pack for creating professional Roblox games with modern graphics",
-    author: "GameDev Studio",
-    price: "$29",
-    rating: 4.7,
-    sold: 89,
-    href: "/products/roblox-assets",
-    badges: [
-      { text: "New", variant: "default" as const },
-      { text: "Hot Deal", variant: "destructive" as const },
-    ],
-  },
-  {
-    id: 4,
-    image:
-      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=450&fit=crop",
-    imageAlt: "Website Template",
-    title: "Modern Business Website Template",
-    description:
-      "Responsive website template with modern design and advanced features for businesses",
-    author: "WebCraft",
-    price: "$79",
-    rating: 4.6,
-    sold: 67,
-    href: "/products/website-template",
-    badges: [{ text: "Premium", variant: "secondary" as const }],
-  },
-  {
-    id: 5,
-    image:
-      "https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?w=800&h=450&fit=crop",
-    imageAlt: "Discord Bot",
-    title: "Multi-Purpose Discord Bot",
-    description:
-      "Feature-rich Discord bot with moderation and entertainment commands for servers",
-    author: "BotMakers",
-    price: "$39",
-    rating: 4.5,
-    sold: 123,
-    href: "/products/discord-bot",
-    badges: [{ text: "Trending", variant: "default" as const }],
-  },
-  {
-    id: 6,
-    image:
-      "https://images.unsplash.com/photo-1551650975-87deedd944c3?w=800&h=450&fit=crop",
-    imageAlt: "Mobile App UI",
-    title: "Mobile App UI Kit",
-    description:
-      "Complete UI kit for modern mobile app development with stunning components",
-    author: "UIExperts",
-    price: "$59",
-    rating: 4.8,
-    sold: 45,
-    href: "/products/mobile-ui-kit",
-    badges: [{ text: "Design", variant: "secondary" as const }],
-  },
-];
+import { orpc } from "@/utils/orpc";
+import { useQuery } from "@tanstack/react-query";
+import { Loader2, AlertCircle } from "lucide-react";
 
 export function FeaturedProducts() {
+  const {
+    data: products = [],
+    isLoading,
+    error,
+  } = useQuery({
+    ...orpc.products.list.queryOptions({
+      input: {
+        limit: 6,
+        sortBy: "featured",
+      },
+    }),
+    staleTime: 15000,
+  });
+
   return (
     <section className="py-20">
       <div className="container mx-auto px-4">
@@ -116,24 +36,65 @@ export function FeaturedProducts() {
           </p>
         </div>
 
+        {/* Loading / Error States */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12 gap-2">
+            <Loader2 className="animate-spin text-muted-foreground" />
+            <span className="text-muted-foreground">Loading products...</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="rounded-full bg-muted p-6">
+              <AlertCircle className="text-destructive" />
+            </div>
+            <p className="mt-4 text-destructive">Failed to load products</p>
+          </div>
+        )}
+
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {featuredProducts.map((product) => (
-            <OverlayCard
-              key={product.id}
-              image={product.image}
-              imageAlt={product.imageAlt}
-              title={product.title}
-              description={product.description}
-              author={product.author}
-              price={product.price}
-              rating={product.rating}
-              sold={product.sold}
-              href={product.href}
-              badges={product.badges}
-            />
-          ))}
-        </div>
+        {!isLoading && !error && products.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {products.map((product, index) => {
+              const badges = [];
+              if (product.isNew)
+                badges.push({ text: "New", variant: "default" as const });
+              if (product.isFeatured)
+                badges.push({
+                  text: "Featured",
+                  variant: "secondary" as const,
+                });
+              if (product.discount > 0)
+                badges.push({
+                  text: `-${product.discount}%`,
+                  variant: "destructive" as const,
+                });
+
+              return (
+                <OverlayCard
+                  key={`${product.id}-${index}`}
+                  image={product.image || "/placeholder.svg"}
+                  imageAlt={product.name}
+                  title={product.name}
+                  description={product.description}
+                  author={product.author}
+                  price={product.price === 0 ? "Free" : `$${product.price}`}
+                  rating={product.rating}
+                  sold={product.sold}
+                  href={`/product/${product.slug || product.id}`}
+                  badges={badges}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {!isLoading && !error && products.length === 0 && (
+          <p className="text-center text-muted-foreground">
+            No featured products found
+          </p>
+        )}
       </div>
     </section>
   );

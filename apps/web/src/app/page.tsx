@@ -1,6 +1,5 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
-import { orpc } from "@/utils/orpc";
+
 import HeroSection from "@/components/hero-section";
 import FooterSection from "@/components/footer";
 import { FeaturedProducts } from "@/components/featured-products";
