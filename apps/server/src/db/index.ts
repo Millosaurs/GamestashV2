@@ -31,3 +31,4 @@ export * from "./schema/categories";
 export * from "./schema/products";
 export * from "./schema/tags";
 export * from "./schema/reviews";
+export * from "./schema/auth"

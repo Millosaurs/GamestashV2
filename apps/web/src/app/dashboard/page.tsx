@@ -1,21 +1,3 @@
-/**
- * Dashboard Page - Role-based user interface
- *
- * Features:
- * - User Dashboard: Purchases, reviews, favorites
- * - Developer Dashboard: Products, revenue, customers, analytics
- * - Both: Tabbed interface for users with both roles
- *
- * TODO for Backend Integration:
- * 1. Create user profile procedure to fetch role from database
- * 2. Create procedures for user data (purchases, reviews, plans)
- * 3. Create procedures for developer data (products, customers, analytics)
- * 4. Replace mock data with real API calls using orpc
- * 5. Remove temporary role selector
- *
- * Current State: Frontend-only with mock data and role selector for testing
- */
-
 "use client";
 
 import * as React from "react";
@@ -58,8 +40,6 @@ import { orpc } from "@/utils/orpc";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Header } from "@/components/header";
-import { apiKey } from "better-auth/plugins";
-import { auth } from "../../../../server/src/lib/auth";
 
 // Types for dashboard data
 interface UserStats {
@@ -106,92 +86,72 @@ interface Product {
   status: "active" | "draft" | "archived";
 }
 
-// Mock data - will be replaced with real API calls later
-const mockUserStats: UserStats = {
-  totalPurchases: 12,
-  totalSpent: 450.99,
-  reviewsGiven: 8,
-  favoriteProducts: 15,
-};
-
-const mockDeveloperStats: DeveloperStats = {
-  totalProducts: 25,
-  totalRevenue: 12450.5,
-  totalCustomers: 340,
-  totalReviews: 89,
-  averageRating: 4.7,
-  monthlyRevenue: 2340.75,
-};
-
-const mockPurchases: Purchase[] = [
-  {
-    id: "1",
-    productName: "Minecraft Resource Pack - Medieval",
-    productImage: "placeholder.svg",
-    price: 12.99,
-    purchaseDate: "2024-01-15",
-    status: "completed",
-  },
-  {
-    id: "2",
-    productName: "Roblox Script - Auto Farm",
-    productImage: "placeholder.svg",
-    price: 25.0,
-    purchaseDate: "2024-01-10",
-    status: "completed",
-  },
-];
-
-const mockReviews: Review[] = [
-  {
-    id: "1",
-    productName: "Minecraft Resource Pack - Medieval",
-    rating: 5,
-    comment: "Amazing quality textures, exactly what I was looking for!",
-    date: "2024-01-16",
-  },
-  {
-    id: "2",
-    productName: "Roblox Script - Auto Farm",
-    rating: 4,
-    comment: "Works great, but could use more configuration options.",
-    date: "2024-01-12",
-  },
-];
-
-const mockProducts: Product[] = [
-  {
-    id: "1",
-    name: "Advanced Minecraft Shaders",
-    price: 19.99,
-    sold: 245,
-    rating: 4.8,
-    reviews: 67,
-    revenue: 4897.55,
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "FiveM Vehicle Pack",
-    price: 35.0,
-    sold: 89,
-    rating: 4.6,
-    reviews: 23,
-    revenue: 3115.0,
-    status: "active",
-  },
-];
+interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: string | null;
+  image: string | null;
+  banned: boolean | null;
+  banReason: string | null;
+  banExpires: Date | null;
+}
 
 // User Dashboard Component
-function UserDashboard({
-  userStats,
-  purchases,
-  reviews,
-}: {
-  userStats: UserStats;
-  purchases: Purchase[];
-  reviews: Review[];
-}) {
+function UserDashboard({ userId }: { userId: string }) {
+  // Fetch user stats
+  const {
+    data: userStats,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useQuery({
+    ...orpc.user.getStats.queryOptions({ input: { userId } }),
+    staleTime: 30000, // Cache for 30 seconds
+  });
+
+  // Fetch recent purchases
+  const {
+    data: purchases = [],
+    isLoading: purchasesLoading,
+    error: purchasesError,
+  } = useQuery({
+    ...orpc.user.getPurchases.queryOptions({ input: { userId, limit: 5 } }),
+    staleTime: 30000,
+  });
+
+  // Fetch user reviews
+  const {
+    data: reviews = [],
+    isLoading: reviewsLoading,
+    error: reviewsError,
+  } = useQuery({
+    ...orpc.user.getReviews.queryOptions({ input: { userId, limit: 5 } }),
+    staleTime: 30000,
+  });
+
+  if (statsLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="size-6 animate-spin" />
+          <span>Loading dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (statsError || !userStats) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <AlertCircle className="size-8 text-destructive mb-3" />
+        <h3 className="text-lg font-semibold">Failed to load data</h3>
+        <p className="text-sm text-muted-foreground">
+          Please try refreshing the page
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -264,40 +224,55 @@ function UserDashboard({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {purchases.map((purchase) => (
-                  <div
-                    key={purchase.id}
-                    className="flex items-center space-x-4"
-                  >
-                    <img
-                      src={purchase.productImage}
-                      alt={purchase.productName}
-                      className="h-12 w-12 rounded-lg object-cover"
-                    />
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {purchase.productName}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(purchase.purchaseDate).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="text-sm font-medium">
-                      ${purchase.price.toFixed(2)}
-                    </div>
-                    <UIBadge
-                      variant={
-                        purchase.status === "completed"
-                          ? "default"
-                          : "secondary"
-                      }
+              {purchasesLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" />
+                  Loading purchases...
+                </div>
+              ) : purchasesError ? (
+                <p className="text-sm text-destructive">
+                  Failed to load purchases
+                </p>
+              ) : purchases.length > 0 ? (
+                <div className="space-y-4">
+                  {purchases.map((purchase) => (
+                    <div
+                      key={purchase.id}
+                      className="flex items-center space-x-4"
                     >
-                      {purchase.status}
-                    </UIBadge>
-                  </div>
-                ))}
-              </div>
+                      <img
+                        src={purchase.productImage}
+                        alt={purchase.productName}
+                        className="h-12 w-12 rounded-lg object-cover"
+                      />
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                          {purchase.productName}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(purchase.purchaseDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-sm font-medium">
+                        ${purchase.price.toFixed(2)}
+                      </div>
+                      <UIBadge
+                        variant={
+                          purchase.status === "completed"
+                            ? "default"
+                            : "secondary"
+                        }
+                      >
+                        {purchase.status}
+                      </UIBadge>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No purchases yet.
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -311,36 +286,49 @@ function UserDashboard({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {reviews.map((review) => (
-                  <div key={review.id} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">
-                        {review.productName}
-                      </p>
-                      <div className="flex items-center space-x-1">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star
-                            key={i}
-                            className={cn(
-                              "h-4 w-4",
-                              i < review.rating
-                                ? "text-yellow-400 fill-yellow-400"
-                                : "text-gray-300"
-                            )}
-                          />
-                        ))}
+              {reviewsLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" />
+                  Loading reviews...
+                </div>
+              ) : reviewsError ? (
+                <p className="text-sm text-destructive">
+                  Failed to load reviews
+                </p>
+              ) : reviews.length > 0 ? (
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium">
+                          {review.productName}
+                        </p>
+                        <div className="flex items-center space-x-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                              key={i}
+                              className={cn(
+                                "h-4 w-4",
+                                i < review.rating
+                                  ? "text-yellow-400 fill-yellow-400"
+                                  : "text-gray-300"
+                              )}
+                            />
+                          ))}
+                        </div>
                       </div>
+                      <p className="text-sm text-muted-foreground">
+                        {review.comment}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(review.date).toLocaleDateString()}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {review.comment}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(review.date).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No reviews yet.</p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -364,13 +352,52 @@ function UserDashboard({
 }
 
 // Developer Dashboard Component
-function DeveloperDashboard({
-  developerStats,
-  products,
-}: {
-  developerStats: DeveloperStats;
-  products: Product[];
-}) {
+function DeveloperDashboard({ userId }: { userId: string }) {
+  // Fetch developer stats
+  const {
+    data: developerStats,
+    isLoading: statsLoading,
+    error: statsError,
+  } = useQuery({
+    ...orpc.user.getDeveloperStats.queryOptions({ input: { userId } }),
+    staleTime: 30000,
+  });
+
+  // Fetch developer products
+  const {
+    data: products = [],
+    isLoading: productsLoading,
+    error: productsError,
+  } = useQuery({
+    ...orpc.user.getDeveloperProducts.queryOptions({
+      input: { userId, limit: 10 },
+    }),
+    staleTime: 30000,
+  });
+
+  if (statsLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="size-6 animate-spin" />
+          <span>Loading dashboard...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (statsError || !developerStats) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <AlertCircle className="size-8 text-destructive mb-3" />
+        <h3 className="text-lg font-semibold">Failed to load data</h3>
+        <p className="text-sm text-muted-foreground">
+          Please try refreshing the page
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
@@ -485,42 +512,55 @@ function DeveloperDashboard({
           <CardDescription>Manage your published products</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {products.map((product) => (
-              <div
-                key={product.id}
-                className="flex items-center justify-between p-4 border rounded-lg"
-              >
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">{product.name}</p>
-                  <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                    <span>${product.price}</span>
-                    <span>{product.sold} sold</span>
-                    <div className="flex items-center space-x-1">
-                      <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
-                      <span>{product.rating}</span>
-                      <span>({product.reviews})</span>
+          {productsLoading ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              Loading products...
+            </div>
+          ) : productsError ? (
+            <p className="text-sm text-destructive">Failed to load products</p>
+          ) : products.length > 0 ? (
+            <div className="space-y-4">
+              {products.map((product) => (
+                <div
+                  key={product.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">{product.name}</p>
+                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                      <span>${product.price}</span>
+                      <span>{product.sold} sold</span>
+                      <div className="flex items-center space-x-1">
+                        <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                        <span>{product.rating}</span>
+                        <span>({product.reviews})</span>
+                      </div>
                     </div>
                   </div>
+                  <div className="flex items-center space-x-2">
+                    <UIBadge
+                      variant={
+                        product.status === "active" ? "default" : "secondary"
+                      }
+                    >
+                      {product.status}
+                    </UIBadge>
+                    <Button size="sm" variant="outline">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="outline">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <UIBadge
-                    variant={
-                      product.status === "active" ? "default" : "secondary"
-                    }
-                  >
-                    {product.status}
-                  </UIBadge>
-                  <Button size="sm" variant="outline">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No products yet. Create your first product!
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -530,40 +570,57 @@ function DeveloperDashboard({
 // Main Dashboard Component
 export default function Dashboard() {
   const router = useRouter();
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending: sessionLoading } = authClient.useSession();
 
-  // Temporary state for role selection (for testing purposes)
-  const [selectedRole, setSelectedRole] = React.useState<
-    "user" | "dev" | "both"
-  >("user");
+  // Fetch user profile including role from database
+  const {
+    data: userProfile,
+    isLoading: profileLoading,
+    error: profileError,
+  } = useQuery({
+    ...orpc.user.getProfile.queryOptions({
+      input: { userId: session?.user.id || "" },
+    }),
+    enabled: !!session?.user.id,
+    staleTime: 60000, // Cache profile for 1 minute
+    retry: 2,
+  });
 
-  // Fetch user data to get the role - this will need to be implemented with backend
-  // For now, we'll use the selectedRole state for testing
+  // Determine user role based on database data
   const userRole = React.useMemo(() => {
-    // TODO: Replace with actual API call to get user role from database
-    // Example implementation when backend is ready:
-    // const { data: userProfile } = useQuery({
-    //   ...orpc.user.profile.queryOptions({ input: { userId: session?.user.id } }),
-    //   enabled: !!session?.user.id,
-    // });
-    // return userProfile?.role || 'user';
+    if (!userProfile?.role) return "user"; // Default to user if no role set
 
-    return selectedRole; // Using state for testing, will be replaced with API call
-  }, [selectedRole]);
+    // Map database role to dashboard role
+    // Adjust these mappings based on your role schema
+    switch (userProfile.role.toLowerCase()) {
+      case "developer":
+      case "dev":
+        return "dev";
+      case "user":
+        return "user";
+      case "both":
+      case "user_and_developer":
+      case "admin": // Admins can see both views
+        return "both";
+      default:
+        return "user";
+    }
+  }, [userProfile]);
 
   const isUser = userRole === "user" || userRole === "both";
   const isDeveloper = userRole === "dev" || userRole === "both";
+  const isLoading = sessionLoading || profileLoading;
 
   useEffect(() => {
-    if (!session && !isPending) {
+    if (!session && !sessionLoading) {
       router.push("/auth");
     }
-  }, [session, isPending]);
+  }, [session, sessionLoading, router]);
 
-  if (isPending) {
+  // Show loading state while fetching session or profile
+  if (isLoading) {
     return (
       <>
-        <Header />
         <div className="flex items-center justify-center min-h-screen">
           <div className="flex items-center gap-3 text-muted-foreground">
             <Loader2 className="size-6 animate-spin" />
@@ -574,8 +631,76 @@ export default function Dashboard() {
     );
   }
 
+  // Show error state if profile couldn't be loaded
+  if (profileError) {
+    return (
+      <>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <AlertCircle className="size-8 text-destructive" />
+            <div>
+              <h2 className="text-lg font-semibold">Failed to load profile</h2>
+              <p className="text-sm text-muted-foreground">
+                Please try refreshing the page
+              </p>
+            </div>
+            <Button onClick={() => window.location.reload()} variant="outline">
+              Refresh
+            </Button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   if (!session) {
     return null;
+  }
+
+  // Check if user is banned
+  if (userProfile?.banned) {
+    const banExpired =
+      userProfile.banExpires && new Date(userProfile.banExpires) < new Date();
+
+    if (banExpired) {
+      // Ban has expired, but we should probably update the database
+      // For now, show a message that they should contact support
+    }
+
+    return (
+      <>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="flex flex-col items-center gap-3 text-center max-w-md">
+            <AlertCircle className="size-8 text-destructive" />
+            <div>
+              <h2 className="text-lg font-semibold">Account Suspended</h2>
+              <p className="text-sm text-muted-foreground">
+                {banExpired
+                  ? "Your account suspension has expired. Please contact support to reactivate your account."
+                  : userProfile.banReason
+                  ? `Your account has been suspended: ${userProfile.banReason}`
+                  : "Your account has been temporarily suspended. Please contact support for assistance."}
+              </p>
+              {userProfile.banExpires && !banExpired && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Expires:{" "}
+                  {new Date(userProfile.banExpires).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+            <Button
+              onClick={async () => {
+                await signOut();
+                router.push("/");
+              }}
+              variant="outline"
+            >
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </>
+    );
   }
 
   return (
@@ -587,13 +712,6 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-foreground">
               Welcome back, {session.user.name}!
             </h1>
-            <Button
-              onClick={async () => {
-                await signOut();
-              }}
-            >
-              Logout
-            </Button>
             <p className="text-muted-foreground mt-2">
               {userRole === "both"
                 ? "Manage your purchases and products all in one place"
@@ -602,34 +720,25 @@ export default function Dashboard() {
                 : "Track your purchases and manage your library"}
             </p>
 
-            {/* Temporary Role Selector - Remove when backend is ready */}
-            <div className="mt-4 p-4 bg-muted rounded-lg">
-              <p className="text-sm font-medium mb-2">
-                🚧 Testing Mode - Select User Role:
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={selectedRole === "user" ? "default" : "outline"}
-                  onClick={() => setSelectedRole("user")}
-                >
-                  User
-                </Button>
-                <Button
-                  size="sm"
-                  variant={selectedRole === "dev" ? "default" : "outline"}
-                  onClick={() => setSelectedRole("dev")}
-                >
-                  Developer
-                </Button>
-                <Button
-                  size="sm"
-                  variant={selectedRole === "both" ? "default" : "outline"}
-                  onClick={() => setSelectedRole("both")}
-                >
-                  Both
-                </Button>
-              </div>
+            {/* User role badge and actions */}
+            <div className="mt-3 flex items-center gap-2">
+              <UIBadge variant="outline">
+                {userRole === "both"
+                  ? "User & Developer"
+                  : userRole === "dev"
+                  ? "Developer"
+                  : "User"}
+              </UIBadge>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  await signOut();
+                  router.push("/");
+                }}
+              >
+                Sign Out
+              </Button>
             </div>
           </div>
 
@@ -651,31 +760,17 @@ export default function Dashboard() {
               </TabsList>
 
               <TabsContent value="user" className="mt-6">
-                <UserDashboard
-                  userStats={mockUserStats}
-                  purchases={mockPurchases}
-                  reviews={mockReviews}
-                />
+                <UserDashboard userId={session.user.id} />
               </TabsContent>
 
               <TabsContent value="developer" className="mt-6">
-                <DeveloperDashboard
-                  developerStats={mockDeveloperStats}
-                  products={mockProducts}
-                />
+                <DeveloperDashboard userId={session.user.id} />
               </TabsContent>
             </Tabs>
           ) : isDeveloper ? (
-            <DeveloperDashboard
-              developerStats={mockDeveloperStats}
-              products={mockProducts}
-            />
+            <DeveloperDashboard userId={session.user.id} />
           ) : (
-            <UserDashboard
-              userStats={mockUserStats}
-              purchases={mockPurchases}
-              reviews={mockReviews}
-            />
+            <UserDashboard userId={session.user.id} />
           )}
         </div>
       </div>
