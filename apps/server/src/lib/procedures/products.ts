@@ -1,4 +1,4 @@
-// products.ts - Fixed version
+// products.ts - Complete version with all procedures
 import { db } from "../../db";
 import { products } from "../../db/schema/products";
 import { platforms } from "../../db/schema/platforms";
@@ -42,6 +42,7 @@ const ProductFilterSchema = z.object({
   offset: z.number().min(0).optional().default(0),
 });
 
+// List products with filters
 export const listProducts = os
   .input(ProductFilterSchema)
   .handler(async (opt) => {
@@ -98,7 +99,7 @@ export const listProducts = os
         conditions.push(or(...tagConditions));
       }
 
-      // Build the base query - REMOVED selectDistinct, use regular select instead
+      // Build the base query
       const baseQuery = db
         .select({
           id: products.id,
@@ -131,7 +132,7 @@ export const listProducts = os
       const queryWithWhere =
         conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
-      // Apply sorting - now this will work because we removed selectDistinct
+      // Apply sorting
       let queryWithSort;
       switch (sortBy) {
         case "featured":
@@ -198,8 +199,7 @@ export const listProducts = os
         "products found"
       );
 
-      // If you still need to remove duplicates, do it in JavaScript
-      // But typically, if your data model is correct, you shouldn't have duplicates
+      // Remove duplicates if needed
       const uniqueProducts = result.reduce((acc, product) => {
         if (!acc.find((p) => p.id === product.id)) {
           acc.push(product);
@@ -237,7 +237,205 @@ export const listProducts = os
     }
   });
 
-// Rest of your exports remain the same...
+// Get single product by ID or slug
+export const getProduct = os
+  .input(
+    z.object({
+      id: z.string().optional(),
+      slug: z.string().optional(),
+    })
+  )
+  .handler(async (opt) => {
+    const { id, slug } = opt.input;
+
+    if (!id && !slug) {
+      throw new Error("Either id or slug must be provided");
+    }
+
+    console.log("Fetching single product:", { id, slug });
+
+    try {
+      const baseQuery = db
+        .select({
+          id: products.id,
+          slug: products.slug,
+          name: products.name,
+          description: products.description,
+          price: products.price,
+          originalPrice: products.originalPrice,
+          discount: products.discount,
+          platformId: products.platformId,
+          categoryId: products.categoryId,
+          rating: products.rating,
+          reviewCount: products.reviewCount,
+          sold: products.sold,
+          image: products.image,
+          author: products.author,
+          isFeatured: products.isFeatured,
+          isNew: products.isNew,
+          tags: products.tags,
+          createdAt: products.createdAt,
+          updatedAt: products.updatedAt,
+          platformName: platforms.name,
+          categoryName: categories.name,
+        })
+        .from(products)
+        .leftJoin(platforms, eq(products.platformId, platforms.id))
+        .leftJoin(categories, eq(products.categoryId, categories.id));
+
+      // Build the where condition based on id or slug
+      const condition = id
+        ? eq(products.id, parseInt(id))
+        : eq(products.slug, slug!);
+
+      const result = await baseQuery.where(condition).limit(1);
+
+      if (result.length === 0) {
+        throw new Error("Product not found");
+      }
+
+      const product = result[0];
+
+      console.log("Product found:", product.name);
+
+      // Transform to match frontend interface
+      return {
+        id: product.id.toString(),
+        slug: product.slug,
+        name: product.name,
+        description: product.description,
+        price: parseFloat(product.price),
+        originalPrice: parseFloat(product.originalPrice),
+        platform: product.platformId,
+        platformName: product.platformName,
+        category: product.categoryId,
+        categoryName: product.categoryName,
+        rating: product.rating || 0,
+        reviewCount: product.reviewCount || 0,
+        sold: product.sold || 0,
+        image: product.image || "/placeholder.svg",
+        author: product.author,
+        tags: Array.isArray(product.tags) ? (product.tags as string[]) : [],
+        isFeatured: product.isFeatured || false,
+        isNew: product.isNew || false,
+        discount: product.discount || 0,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+      };
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      if (error instanceof Error && error.message === "Product not found") {
+        throw error;
+      }
+      throw new Error("Failed to fetch product");
+    }
+  });
+
+// Get related products by category and platform
+export const getRelatedProducts = os
+  .input(
+    z.object({
+      categoryId: z.string(),
+      platformId: z.string(),
+      excludeId: z.string().optional(), // Exclude the current product
+      limit: z.number().min(1).max(20).optional().default(8),
+    })
+  )
+  .handler(async (opt) => {
+    const { categoryId, platformId, excludeId, limit } = opt.input;
+
+    console.log("Fetching related products:", {
+      categoryId,
+      platformId,
+      excludeId,
+    });
+
+    try {
+      const baseQuery = db
+        .select({
+          id: products.id,
+          slug: products.slug,
+          name: products.name,
+          description: products.description,
+          price: products.price,
+          originalPrice: products.originalPrice,
+          discount: products.discount,
+          platformId: products.platformId,
+          categoryId: products.categoryId,
+          rating: products.rating,
+          reviewCount: products.reviewCount,
+          sold: products.sold,
+          image: products.image,
+          author: products.author,
+          isFeatured: products.isFeatured,
+          isNew: products.isNew,
+          tags: products.tags,
+          createdAt: products.createdAt,
+          updatedAt: products.updatedAt,
+          platformName: platforms.name,
+          categoryName: categories.name,
+        })
+        .from(products)
+        .leftJoin(platforms, eq(products.platformId, platforms.id))
+        .leftJoin(categories, eq(products.categoryId, categories.id));
+
+      // Build conditions for related products
+      const conditions = [
+        or(
+          eq(products.categoryId, categoryId),
+          eq(products.platformId, platformId)
+        ),
+      ];
+
+      // Exclude current product if provided
+      if (excludeId) {
+        conditions.push(sql`${products.id} != ${parseInt(excludeId)}`);
+      }
+
+      const result = await baseQuery
+        .where(and(...conditions))
+        .orderBy(
+          desc(products.isFeatured),
+          desc(products.rating),
+          desc(products.reviewCount)
+        )
+        .limit(limit);
+
+      console.log("Related products found:", result.length);
+
+      // Transform results
+      const transformedProducts = result.map((product) => ({
+        id: product.id.toString(),
+        slug: product.slug,
+        name: product.name,
+        description: product.description,
+        price: parseFloat(product.price),
+        originalPrice: parseFloat(product.originalPrice),
+        platform: product.platformId,
+        platformName: product.platformName,
+        category: product.categoryId,
+        categoryName: product.categoryName,
+        rating: product.rating || 0,
+        reviewCount: product.reviewCount || 0,
+        sold: product.sold || 0,
+        image: product.image || "/placeholder.svg",
+        author: product.author,
+        tags: Array.isArray(product.tags) ? (product.tags as string[]) : [],
+        isFeatured: product.isFeatured || false,
+        isNew: product.isNew || false,
+        discount: product.discount || 0,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+      }));
+
+      return transformedProducts;
+    } catch (error) {
+      console.error("Error fetching related products:", error);
+      throw new Error("Failed to fetch related products");
+    }
+  });
+
+// Get product tags
 export const getProductTags = os
   .input(
     z.object({
@@ -275,6 +473,7 @@ export const getProductTags = os
     }
   });
 
+// Get price range
 export const getPriceRange = os.handler(async () => {
   try {
     const result = await db
@@ -298,8 +497,11 @@ export const getPriceRange = os.handler(async () => {
   }
 });
 
+// Export all procedures
 export const productsRoute = {
   list: listProducts,
+  get: getProduct,
+  related: getRelatedProducts,
   tags: getProductTags,
   priceRange: getPriceRange,
 };
