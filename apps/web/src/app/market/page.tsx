@@ -868,7 +868,7 @@ export default function MarketPage() {
                       rating={product.rating}
                       sold={product.sold}
                       badges={badges}
-                      href={`/product/${product.slug || product.id}`}
+                      href={`/product/${product.id}`}
                       ctaText={product.price === 0 ? "Download" : "Add to Cart"}
                       className="h-fit"
                     />

@@ -1,4 +1,7 @@
 // products.ts - Complete version with all procedures
+// NOTE: Add this field to your products schema:
+// content: text("content"), // Rich text content from editor
+
 import { db } from "../../db";
 import { products } from "../../db/schema/products";
 import { platforms } from "../../db/schema/platforms";

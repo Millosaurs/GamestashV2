@@ -7,7 +7,6 @@ import {
   Star,
   Heart,
   Share2,
-  ShoppingCart,
   Download,
   Shield,
   Award,
@@ -25,13 +24,13 @@ import {
   ExternalLink,
   TrendingUp,
   Users,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/animate-ui/components/buttons/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { orpc } from "@/utils/orpc";
 import { Header } from "@/components/header";
@@ -98,7 +97,7 @@ export default function ProductPage({
         <Header />
         <div className="pt-20 flex items-center justify-center h-[70vh]">
           <div className="text-center space-y-4">
-            <div className="rounded-full bg-muted p-6 mx-auto w-fit">
+            <div className="rounded-xl bg-muted p-6 mx-auto w-fit">
               <AlertCircle className="size-8 text-destructive" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">
@@ -125,8 +124,9 @@ export default function ProductPage({
     "/api/placeholder/800/600",
   ].filter(Boolean);
 
-  const handleAddToCart = () => {
-    console.log("Added to cart:", product.id);
+  const handleBuyNow = () => {
+    console.log("Buy now:", product.id);
+    // Direct purchase logic here
   };
 
   const handleDownload = () => {
@@ -154,16 +154,43 @@ export default function ProductPage({
       ? product.originalPrice - product.price
       : 0;
 
+  // Mock rich text content
+  const mockRichContent =
+    product.content ||
+    `
+    <h2>Product Overview</h2>
+    <p>This is a comprehensive digital product designed to meet your needs. Built with modern standards and best practices in mind.</p>
+
+    <h3>Key Features</h3>
+    <ul>
+      <li>Premium quality assets and components</li>
+      <li>Easy to customize and implement</li>
+      <li>Compatible with all modern browsers</li>
+      <li>Comprehensive documentation included</li>
+    </ul>
+
+    <h3>What's Included</h3>
+    <p>You'll receive everything you need to get started:</p>
+    <ul>
+      <li>Source files in multiple formats</li>
+      <li>Complete documentation</li>
+      <li>Example implementations</li>
+      <li>Free updates for 1 year</li>
+    </ul>
+
+    <h3>System Requirements</h3>
+    <p>Compatible with all modern development environments and platforms. No special requirements needed.</p>
+  `;
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
       <div className="pt-20">
-        {/* Hero Section */}
-        <div className="relative bg-gradient-to-br from-primary/10 via-background to-secondary/10">
-          <div className="container mx-auto px-4 py-12">
-            {/* Navigation */}
-            <div className="flex items-center justify-between mb-8">
+        {/* Navigation */}
+        <div className="border-b bg-background">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
               <Button
                 variant="ghost"
                 onClick={() => window.history.back()}
@@ -183,7 +210,6 @@ export default function ProductPage({
                   <Heart
                     className={`size-4 ${isWishlisted ? "fill-current" : ""}`}
                   />
-                  {isWishlisted ? "Wishlisted" : "Wishlist"}
                 </Button>
                 <Button
                   variant="outline"
@@ -192,98 +218,68 @@ export default function ProductPage({
                   className="gap-2"
                 >
                   <Share2 className="size-4" />
-                  Share
                 </Button>
               </div>
             </div>
+          </div>
+        </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-              {/* Image Gallery */}
-              <div className="lg:col-span-7">
-                <div className="space-y-6">
-                  {/* Main Image */}
-                  <Card className="overflow-hidden border-0 shadow-xl">
-                    <div className="aspect-[16/10] bg-gradient-to-br from-muted/50 to-muted relative overflow-hidden">
-                      <img
-                        src={mockImages[selectedImageIndex]}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                      />
+        {/* Main Content */}
+        <div className="container mx-auto px-4 py-8">
+          {/* Image Gallery Section */}
+          <div className="mb-8 flex items-center">
+            <Card className="overflow-hidden border-0 shadow-xl m-4  py-0">
+              <div className="aspect-[16/9] bg-gradient-to-br from-muted/50 to-muted relative overflow-hidden ">
+                <img
+                  src={mockImages[selectedImageIndex]}
+                  alt={product.name}
+                  className="w-full h-full object-cover rounded-xl"
+                />
 
-                      {/* Play Button Overlay */}
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
-                        <Button size="lg" className="rounded-full">
-                          <Play className="size-6 fill-current" />
-                        </Button>
-                      </div>
+                {/* Play Button Overlay */}
+                <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
+                  <Button size="lg" className="rounded-full">
+                    <Play className="size-6 fill-current" />
+                  </Button>
+                </div>
 
-                      {/* Badges Overlay */}
-                      <div className="absolute top-4 left-4 flex gap-2">
-                        {product.isNew && (
-                          <Badge
-                            variant="default"
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            New
-                          </Badge>
-                        )}
-                        {product.isFeatured && (
-                          <Badge variant="secondary">Featured</Badge>
-                        )}
-                        {product.discount > 0 && (
-                          <Badge variant="destructive">
-                            -{product.discount}%
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-
-                  {/* Thumbnail Grid */}
-                  {mockImages.length > 1 && (
-                    <div className="grid grid-cols-4 gap-4">
-                      {mockImages.map((image, index) => (
-                        <Card
-                          key={index}
-                          className={cn(
-                            "cursor-pointer overflow-hidden border-2 transition-all duration-200 hover:scale-105",
-                            selectedImageIndex === index
-                              ? "border-primary shadow-lg"
-                              : "border-transparent hover:border-border"
-                          )}
-                          onClick={() => setSelectedImageIndex(index)}
-                        >
-                          <div className="aspect-square">
-                            <img
-                              src={image}
-                              alt={`${product.name} - Image ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
+                {/* Badges Overlay */}
+                <div className="absolute top-6 left-6 flex gap-2">
+                  {product.isNew && (
+                    <Badge
+                      variant="default"
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      New
+                    </Badge>
+                  )}
+                  {product.isFeatured && (
+                    <Badge variant="secondary">Featured</Badge>
+                  )}
+                  {product.discount > 0 && (
+                    <Badge variant="destructive">-{product.discount}%</Badge>
                   )}
                 </div>
               </div>
+            </Card>
+            <div className="lg:col-span-1 w-1/3">
+              <Card className="sticky top-24">
+                <CardContent className="p-6 space-y-6">
+                  {/* Platform & Category */}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    {product.platform === "websites" ? (
+                      <Globe className="size-4" />
+                    ) : (
+                      <Gamepad2 className="size-4" />
+                    )}
+                    <span>{product.platformName}</span>
+                    <span>•</span>
+                    <span>{product.categoryName}</span>
+                  </div>
 
-              {/* Product Info */}
-              <div className="lg:col-span-5">
-                <div className="space-y-8">
-                  {/* Header */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      {product.platform === "websites" ? (
-                        <Globe className="size-4" />
-                      ) : (
-                        <Gamepad2 className="size-4" />
-                      )}
-                      <span>{product.platformName}</span>
-                      <span>•</span>
-                      <span>{product.categoryName}</span>
-                    </div>
-
-                    <h1 className="text-4xl font-bold text-foreground leading-tight">
+                  {/* Title & Author */}
+                  <div className="space-y-3">
+                    <h1 className="text-2xl font-bold text-foreground leading-tight">
                       {product.name}
                     </h1>
 
@@ -294,20 +290,22 @@ export default function ProductPage({
                           {product.author.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-muted-foreground">by</span>
-                      <span className="font-medium">{product.author}</span>
+                      <span className="text-muted-foreground text-sm">by</span>
+                      <span className="font-medium text-sm">
+                        {product.author}
+                      </span>
                     </div>
                   </div>
 
                   {/* Stats */}
-                  <div className="flex items-center gap-6">
+                  <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <div className="flex items-center">
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
                             className={cn(
-                              "size-4",
+                              "size-3",
                               i < Math.floor(product.rating)
                                 ? "fill-yellow-400 text-yellow-400"
                                 : "text-muted-foreground/30"
@@ -315,227 +313,190 @@ export default function ProductPage({
                           />
                         ))}
                       </div>
-                      <span className="font-semibold">{product.rating}</span>
-                      <span className="text-muted-foreground text-sm">
+                      <span className="font-semibold text-sm">
+                        {product.rating}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
                         ({product.reviewCount})
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <Users className="size-4" />
-                      <span className="text-sm">{product.sold} sold</span>
+                      <Users className="size-3" />
+                      <span className="text-xs">{product.sold} sold</span>
                     </div>
                   </div>
 
                   <Separator />
 
                   {/* Pricing */}
-                  <Card className="border-2 border-primary/20 bg-primary/5">
-                    <CardContent className="p-6">
-                      <div className="space-y-4">
-                        <div className="flex items-baseline gap-4">
-                          <span className="text-4xl font-bold text-foreground">
-                            {product.price === 0 ? "Free" : `$${product.price}`}
+                  <div className="space-y-4">
+                    <div className="flex items-baseline gap-3">
+                      <span className="text-3xl font-bold text-foreground">
+                        {product.price === 0 ? "Free" : `$${product.price}`}
+                      </span>
+                      {product.originalPrice > product.price && (
+                        <div className="flex flex-col">
+                          <span className="text-sm text-muted-foreground line-through">
+                            ${product.originalPrice}
                           </span>
-                          {product.originalPrice > product.price && (
-                            <div className="flex flex-col">
-                              <span className="text-lg text-muted-foreground line-through">
-                                ${product.originalPrice}
-                              </span>
-                              <span className="text-sm text-green-600 font-medium">
-                                Save ${discountedPrice.toFixed(2)}
-                              </span>
-                            </div>
-                          )}
+                          <span className="text-xs text-green-600 font-medium">
+                            Save ${discountedPrice.toFixed(2)}
+                          </span>
                         </div>
+                      )}
+                    </div>
 
-                        {/* Action Buttons */}
-                        <div className="space-y-3">
-                          {product.price === 0 ? (
-                            <Button
-                              onClick={handleDownload}
-                              size="lg"
-                              className="w-full gap-2 text-base font-semibold"
-                            >
-                              <Download className="size-5" />
-                              Download Now
-                            </Button>
-                          ) : (
-                            <Button
-                              onClick={handleAddToCart}
-                              size="lg"
-                              className="w-full gap-2 text-base font-semibold"
-                            >
-                              <ShoppingCart className="size-5" />
-                              Add to Cart
-                            </Button>
-                          )}
+                    {/* Buy Button */}
+                    {product.price === 0 ? (
+                      <Button
+                        onClick={handleDownload}
+                        size="lg"
+                        className="w-full gap-2 text-base font-semibold"
+                      >
+                        <Download className="size-5" />
+                        Download Now
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={handleBuyNow}
+                        size="lg"
+                        className="w-full gap-2 text-base font-semibold"
+                      >
+                        <Zap className="size-5" />
+                        Buy Now
+                      </Button>
+                    )}
 
-                          <div className="grid grid-cols-2 gap-3">
-                            <Button variant="outline" className="gap-2">
-                              <Eye className="size-4" />
-                              Preview
-                            </Button>
-                            <Button variant="outline" className="gap-2">
-                              <ExternalLink className="size-4" />
-                              Demo
-                            </Button>
-                          </div>
-                        </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="outline" size="sm" className="gap-1">
+                        <Eye className="size-3" />
+                        Preview
+                      </Button>
+                      <Button variant="outline" size="sm" className="gap-1">
+                        <ExternalLink className="size-3" />
+                        Demo
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Product Details */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-foreground">
+                      Product Details
+                    </h3>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">
+                          Last Updated
+                        </span>
+                        <span className="font-medium">
+                          {new Date(product.updatedAt).toLocaleDateString()}
+                        </span>
                       </div>
-                    </CardContent>
-                  </Card>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Released</span>
+                        <span className="font-medium">
+                          {new Date(product.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">File Size</span>
+                        <span className="font-medium">25.4 MB</span>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Trust Badges */}
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/50">
-                      <Shield className="size-5 text-green-600" />
-                      <span className="text-sm font-medium">
-                        Secure Purchase Protected
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-2 rounded-xl bg-accent/50">
+                      <Shield className="size-4 text-green-600" />
+                      <span className="text-xs font-medium">
+                        Secure Purchase
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-accent/50">
-                      <CheckCircle2 className="size-5 text-blue-600" />
-                      <span className="text-sm font-medium">
-                        Instant Access After Purchase
+                    <div className="flex items-center gap-2 p-2 rounded-xl bg-accent/50">
+                      <CheckCircle2 className="size-4 text-blue-600" />
+                      <span className="text-xs font-medium">
+                        Instant Access
                       </span>
                     </div>
                   </div>
-                </div>
-              </div>
+
+                  {/* Tags */}
+                  {product.tags && product.tags.length > 0 && (
+                    <>
+                      <Separator />
+                      <div className="space-y-3">
+                        <h3 className="font-semibold text-foreground text-sm">
+                          Tags
+                        </h3>
+                        <div className="flex flex-wrap gap-1">
+                          {product.tags.map((tag, index) => (
+                            <Badge
+                              key={index}
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
             </div>
+
+            {/* Thumbnail Grid */}
           </div>
-        </div>
 
-        {/* Content Tabs */}
-        <div className="container mx-auto px-4 py-16">
-          <Tabs defaultValue="description" className="space-y-8">
-            <TabsList className="grid grid-cols-3 w-full max-w-md mx-auto">
-              <TabsTrigger value="description">Description</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="reviews">Reviews</TabsTrigger>
-            </TabsList>
+          {/* Product Info and Content Grid */}
+          <div className="  gap-8">
+            {/* Left Sidebar - Product Details (1/3) */}
 
-            <TabsContent value="description" className="space-y-6">
+            {/* Right Content Area - Rich Text Content (2/3) */}
+            <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Award className="size-5" />
-                    About This Product
+                    Product Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground leading-relaxed text-base">
-                    {product.description}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Tags */}
-              {product.tags && product.tags.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Tags</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {product.tags.map((tag, index) => (
-                        <Badge
-                          key={index}
-                          variant="secondary"
-                          className="text-sm"
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-
-            <TabsContent value="details" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Product Information</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          {product.platform === "websites" ? (
-                            <Globe className="size-4 text-muted-foreground" />
-                          ) : (
-                            <Gamepad2 className="size-4 text-muted-foreground" />
-                          )}
-                          <span className="text-sm text-muted-foreground">
-                            Platform
-                          </span>
-                        </div>
-                        <p className="font-medium">{product.platformName}</p>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Tag className="size-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">
-                            Category
-                          </span>
-                        </div>
-                        <p className="font-medium">{product.categoryName}</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Calendar className="size-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">
-                            Last Updated
-                          </span>
-                        </div>
-                        <p className="font-medium">
-                          {new Date(product.updatedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Clock className="size-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">
-                            Released
-                          </span>
-                        </div>
-                        <p className="font-medium">
-                          {new Date(product.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
+                  {/* Short Description */}
+                  <div className="mb-6 p-4 rounded-xl bg-accent/30 border">
+                    <p className="text-muted-foreground leading-relaxed">
+                      {product.description}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
 
-            <TabsContent value="reviews">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Customer Reviews</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Star className="size-12 mx-auto mb-4 opacity-50" />
-                    <p>Reviews feature coming soon!</p>
-                  </div>
+                  {/* Rich Text Content */}
+                  <div
+                    className="prose prose-slate max-w-none dark:prose-invert
+                      prose-headings:text-foreground prose-headings:font-semibold
+                      prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4
+                      prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3
+                      prose-p:text-muted-foreground prose-p:leading-relaxed
+                      prose-ul:text-muted-foreground prose-li:text-muted-foreground
+                      prose-strong:text-foreground prose-strong:font-semibold"
+                    dangerouslySetInnerHTML={{
+                      __html: mockRichContent,
+                    }}
+                  />
                 </CardContent>
               </Card>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         </div>
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-          <div className="bg-accent/30 py-16">
+          <div className="bg-accent/30 py-16 mt-16">
             <div className="container mx-auto px-4">
               <div className="flex items-center gap-3 mb-8">
                 <TrendingUp className="size-6 text-primary" />
@@ -589,9 +550,7 @@ export default function ProductPage({
                           relatedProduct.slug || relatedProduct.id
                         }`}
                         ctaText={
-                          relatedProduct.price === 0
-                            ? "Download"
-                            : "Add to Cart"
+                          relatedProduct.price === 0 ? "Download" : "Buy Now"
                         }
                         className="h-fit"
                       />
