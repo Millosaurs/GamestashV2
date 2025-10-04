@@ -13,7 +13,7 @@ These principles govern how all new UI is built. They assume shadcn-style compon
 
 - **Tailwind-first**: Compose UI with utilities. Add one-off CSS only when reusable and colocate in Tailwind layers.
 - **Class merging**: Always compose `className` with `cn(...)` to merge and dedupe.
-- **Radius & shadows**: Use the provided scale (`rounded-md`, `shadow-xs/sm/md/...`) which maps to CSS vars in `index.css`.
+- **Radius & shadows**: Use the provided scale (`rounded-xl`, `shadow-xs/sm/md/...`) which maps to CSS vars in `index.css`.
 - **Motion**: Prefer small, consistent transitions (`transition-colors`, `transition-shadow`, `duration-200/300`). Respect reduced-motion.
 
 ### Component API design (shadcn pattern)
@@ -33,7 +33,8 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const componentVariants = cva(
-  "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+  "inline-flex items-center justify-center rounded-xl
+   text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
   {
     variants: {
       variant: {

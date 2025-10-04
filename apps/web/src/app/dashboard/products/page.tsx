@@ -71,8 +71,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/animate-ui/components/radix/checkbox";
-import { Switch } from "@/components/animate-ui/components/radix/switch";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // Types based on your schema
 interface Product {
@@ -203,11 +203,6 @@ type SortDirection = "asc" | "desc";
 
 export default function DeveloperProductsDashboard() {
   const [products, setProducts] = React.useState<Product[]>(mockProducts);
-  const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
-  const [editingProduct, setEditingProduct] = React.useState<Product | null>(
-    null
-  );
   const [selectedProducts, setSelectedProducts] = React.useState<number[]>([]);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [filterPlatform, setFilterPlatform] = React.useState<string>("all");
@@ -216,6 +211,7 @@ export default function DeveloperProductsDashboard() {
   const [sortDirection, setSortDirection] =
     React.useState<SortDirection>("desc");
   const [isLoading, setIsLoading] = React.useState(false);
+  const router = useRouter();
 
   // Filter and sort products
   const filteredAndSortedProducts = React.useMemo(() => {
@@ -275,47 +271,6 @@ export default function DeveloperProductsDashboard() {
     ) : (
       <ArrowDown className="h-4 w-4" />
     );
-  };
-
-  const handleCreateProduct = async (formData: ProductFormData) => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const newProduct: Product = {
-      id: Math.max(...products.map((p) => p.id)) + 1,
-      slug: formData.name.toLowerCase().replace(/\s+/g, "-"),
-      author: "John Developer", // This would come from the authenticated user
-      rating: 0,
-      reviewCount: 0,
-      sold: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      ...formData,
-    };
-
-    setProducts([...products, newProduct]);
-    setIsCreateModalOpen(false);
-    setIsLoading(false);
-  };
-
-  const handleEditProduct = async (formData: ProductFormData) => {
-    if (!editingProduct) return;
-
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const updatedProducts = products.map((product) =>
-      product.id === editingProduct.id
-        ? { ...product, ...formData, updatedAt: new Date().toISOString() }
-        : product
-    );
-
-    setProducts(updatedProducts);
-    setIsEditModalOpen(false);
-    setEditingProduct(null);
-    setIsLoading(false);
   };
 
   const handleDeleteProduct = async (productId: number) => {
@@ -390,7 +345,10 @@ export default function DeveloperProductsDashboard() {
               Manage your product catalog and track performance
             </p>
           </div>
-          <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+          <Button
+            onClick={() => router.push("/dashboard/products/create")}
+            className="gap-2 rounded-xl"
+          >
             <Plus className="h-4 w-4" />
             Add Product
           </Button>
@@ -729,10 +687,11 @@ export default function DeveloperProductsDashboard() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="rounded-xl">
                           <DropdownMenuItem
-                            onClick={() => {
-                              setEditingProduct(product);
-                              setIsEditModalOpen(true);
-                            }}
+                            onClick={() =>
+                              router.push(
+                                `/dashboard/products/create?id={product.id}`
+                              )
+                            }
                           >
                             <Edit className="h-4 w-4 mr-2" />
                             Edit
@@ -772,10 +731,10 @@ export default function DeveloperProductsDashboard() {
                   filterPlatform === "all" &&
                   filterCategory === "all" && (
                     <Button
-                      onClick={() => setIsCreateModalOpen(true)}
-                      className="rounded-xl"
+                      onClick={() => router.push("/dashboard/products/create")}
+                      className="gap-2 rounded-xl"
                     >
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="h-4 w-4" />
                       Add Product
                     </Button>
                   )}
@@ -783,358 +742,7 @@ export default function DeveloperProductsDashboard() {
             )}
           </CardContent>
         </Card>
-
-        {/* Create Product Modal */}
-        <ProductModal
-          isOpen={isCreateModalOpen}
-          onClose={() => setIsCreateModalOpen(false)}
-          onSubmit={handleCreateProduct}
-          title="Create New Product"
-          isLoading={isLoading}
-        />
-
-        {/* Edit Product Modal */}
-        {editingProduct && (
-          <ProductModal
-            isOpen={isEditModalOpen}
-            onClose={() => {
-              setIsEditModalOpen(false);
-              setEditingProduct(null);
-            }}
-            onSubmit={handleEditProduct}
-            title="Edit Product"
-            initialData={editingProduct}
-            isLoading={isLoading}
-          />
-        )}
       </div>
     </div>
-  );
-}
-
-// Product Modal Component
-function ProductModal({
-  isOpen,
-  onClose,
-  onSubmit,
-  title,
-  initialData,
-  isLoading = false,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: ProductFormData) => void;
-  title: string;
-  initialData?: Product;
-  isLoading?: boolean;
-}) {
-  const [formData, setFormData] = React.useState<ProductFormData>({
-    name: initialData?.name || "",
-    description: initialData?.description || "",
-    price: initialData?.price || "",
-    originalPrice: initialData?.originalPrice || "",
-    discount: initialData?.discount || 0,
-    platformId: initialData?.platformId || "none",
-    categoryId: initialData?.categoryId || "none",
-    image: initialData?.image || "",
-    isFeatured: initialData?.isFeatured || false,
-    isNew: initialData?.isNew || false,
-    tags: initialData?.tags || [],
-  });
-
-  const [errors, setErrors] = React.useState<Record<string, string>>({});
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) newErrors.name = "Product name is required";
-    if (!formData.description.trim())
-      newErrors.description = "Description is required";
-    if (!formData.price || parseFloat(formData.price) <= 0)
-      newErrors.price = "Valid price is required";
-    if (!formData.originalPrice || parseFloat(formData.originalPrice) <= 0)
-      newErrors.originalPrice = "Valid original price is required";
-    if (!formData.platformId || formData.platformId === "none")
-      newErrors.platformId = "Platform selection is required";
-    if (!formData.categoryId || formData.categoryId === "none")
-      newErrors.categoryId = "Category selection is required";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validateForm()) {
-      onSubmit(formData);
-    }
-  };
-
-  const handleInputChange = (field: keyof ProductFormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>
-            Fill in the details for your product. All fields marked with * are
-            required.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <Label htmlFor="name">Product Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                placeholder="Enter product name"
-                className={
-                  errors.name ? "border-destructive" : "rounded-xl my-2"
-                }
-              />
-              {errors.name && (
-                <p className="text-sm text-destructive mt-1">{errors.name}</p>
-              )}
-            </div>
-
-            <div className="md:col-span-2">
-              <Label htmlFor="description">Description *</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) =>
-                  handleInputChange("description", e.target.value)
-                }
-                placeholder="Describe your product"
-                rows={3}
-                className={
-                  errors.description ? "border-destructive" : "rounded-xl my-2"
-                }
-              />
-              {errors.description && (
-                <p className="text-sm text-destructive mt-1">
-                  {errors.description}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="price">Price ($) *</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                value={formData.price}
-                onChange={(e) => handleInputChange("price", e.target.value)}
-                placeholder="0.00"
-                className={
-                  errors.price ? "border-destructive" : "rounded-xl my-2"
-                }
-              />
-              {errors.price && (
-                <p className="text-sm text-destructive mt-1">{errors.price}</p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="originalPrice">Original Price ($) *</Label>
-              <Input
-                id="originalPrice"
-                type="number"
-                step="0.01"
-                value={formData.originalPrice}
-                onChange={(e) =>
-                  handleInputChange("originalPrice", e.target.value)
-                }
-                placeholder="0.00"
-                className={
-                  errors.originalPrice
-                    ? "border-destructive"
-                    : "rounded-xl my-2"
-                }
-              />
-              {errors.originalPrice && (
-                <p className="text-sm text-destructive mt-1">
-                  {errors.originalPrice}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="discount">Discount (%)</Label>
-              <Input
-                id="discount"
-                type="number"
-                min="0"
-                max="100"
-                value={formData.discount}
-                onChange={(e) =>
-                  handleInputChange("discount", parseInt(e.target.value) || 0)
-                }
-                placeholder="0"
-                className="rounded-xl my-2"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="platformId">Platform *</Label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={`w-full justify-start ${
-                      errors.platformId
-                        ? "border-destructive"
-                        : "rounded-xl my-2"
-                    }`}
-                  >
-                    {formData.platformId
-                      ? mockPlatforms.find((p) => p.id === formData.platformId)
-                          ?.name || "Select Platform"
-                      : "Select Platform"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 rounded-xl">
-                  <DropdownMenuLabel>Select Platform</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {mockPlatforms.map((platform) => (
-                    <DropdownMenuItem
-                      key={platform.id}
-                      onClick={() =>
-                        handleInputChange("platformId", platform.id)
-                      }
-                      className={
-                        formData.platformId === platform.id ? "bg-accent" : ""
-                      }
-                    >
-                      {formData.platformId === platform.id && (
-                        <Check className="h-4 w-4 mr-2" />
-                      )}
-                      {platform.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              {errors.platformId && (
-                <p className="text-sm text-destructive mt-1">
-                  {errors.platformId}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="categoryId">Category *</Label>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={`w-full justify-start ${
-                      errors.categoryId
-                        ? "border-destructive"
-                        : "rounded-xl my-2"
-                    }`}
-                  >
-                    {formData.categoryId
-                      ? mockCategories.find((c) => c.id === formData.categoryId)
-                          ?.name || "Select Category"
-                      : "Select Category"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 rounded-xl">
-                  <DropdownMenuLabel>Select Category</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {mockCategories.map((category) => (
-                    <DropdownMenuItem
-                      key={category.id}
-                      onClick={() =>
-                        handleInputChange("categoryId", category.id)
-                      }
-                      className={
-                        formData.categoryId === category.id ? "bg-accent" : ""
-                      }
-                    >
-                      {formData.categoryId === category.id && (
-                        <Check className="h-4 w-4 mr-2" />
-                      )}
-                      {category.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              {errors.categoryId && (
-                <p className="text-sm text-destructive mt-1">
-                  {errors.categoryId}
-                </p>
-              )}
-            </div>
-
-            <div className="md:col-span-2">
-              <Label htmlFor="image">Product Image URL</Label>
-              <Input
-                id="image"
-                type="url"
-                value={formData.image}
-                onChange={(e) => handleInputChange("image", e.target.value)}
-                placeholder="https://example.com/image.jpg"
-                className="rounded-xl my-2"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <Label htmlFor="tags">Tags (comma-separated)</Label>
-              <Input
-                id="tags"
-                value={formData.tags?.join(", ") || ""}
-                onChange={(e) =>
-                  handleInputChange(
-                    "tags",
-                    e.target.value
-                      .split(",")
-                      .map((tag) => tag.trim())
-                      .filter(Boolean)
-                  )
-                }
-                placeholder="action, adventure, multiplayer"
-                className="rounded-xl mt-2"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isLoading}
-              className="rounded-xl "
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading} className="rounded-xl ">
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  {initialData ? "Updating..." : "Creating..."}
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  {initialData ? "Update Product" : "Create Product"}
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }

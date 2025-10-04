@@ -1,7 +1,9 @@
+// app/products/[slugOrId]/page.tsx
 "use client";
 
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
 import {
   ArrowLeft,
   Star,
@@ -10,13 +12,6 @@ import {
   Download,
   Shield,
   Award,
-  Calendar,
-  Eye,
-  Tag,
-  Gamepad2,
-  Globe,
-  User,
-  Clock,
   CheckCircle2,
   AlertCircle,
   Loader2,
@@ -25,6 +20,9 @@ import {
   TrendingUp,
   Users,
   Zap,
+  Globe,
+  Gamepad2,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/animate-ui/components/buttons/button";
@@ -36,15 +34,15 @@ import { orpc } from "@/utils/orpc";
 import { Header } from "@/components/header";
 import { OverlayCard } from "@/components/overlay-card";
 
-interface ProductPageProps {
-  productId?: string;
-  productSlug?: string;
-}
+export default function ProductDetailPage() {
+  const params = useParams();
+  const slugOrId = params.slugOrId as string;
 
-export default function ProductPage({
-  productId = "1",
-  productSlug,
-}: ProductPageProps) {
+  // Check if slugOrId is a numeric ID or a slug
+  const isNumericId = /^\d+$/.test(slugOrId);
+  const productId = isNumericId ? slugOrId : undefined;
+  const productSlug = !isNumericId ? slugOrId : undefined;
+
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
@@ -126,7 +124,6 @@ export default function ProductPage({
 
   const handleBuyNow = () => {
     console.log("Buy now:", product.id);
-    // Direct purchase logic here
   };
 
   const handleDownload = () => {
@@ -154,7 +151,6 @@ export default function ProductPage({
       ? product.originalPrice - product.price
       : 0;
 
-  // Mock rich text content
   const mockRichContent =
     product.content ||
     `
@@ -263,7 +259,7 @@ export default function ProductPage({
               </div>
             </Card>
             <div className="lg:col-span-1 w-1/3">
-              <Card className="sticky top-24">
+              <Card className="sticky top-24 py-0">
                 <CardContent className="p-6 space-y-6">
                   {/* Platform & Category */}
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -278,8 +274,8 @@ export default function ProductPage({
                   </div>
 
                   {/* Title & Author */}
-                  <div className="space-y-3">
-                    <h1 className="text-2xl font-bold text-foreground leading-tight">
+                  <div className="space-y-2 mb-2">
+                    <h1 className="text-2xl font-bold text-foreground ">
                       {product.name}
                     </h1>
 
@@ -298,7 +294,7 @@ export default function ProductPage({
                   </div>
 
                   {/* Stats */}
-                  <div className="space-y-3">
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <div className="flex items-center">
                         {[...Array(5)].map((_, i) => (
@@ -333,7 +329,7 @@ export default function ProductPage({
                   <div className="space-y-4">
                     <div className="flex items-baseline gap-3">
                       <span className="text-3xl font-bold text-foreground">
-                        {product.price === 0 ? "Free" : `$${product.price}`}
+                        {product.price === 0 ? "Free" : `${product.price}`}
                       </span>
                       {product.originalPrice > product.price && (
                         <div className="flex flex-col">
@@ -409,21 +405,8 @@ export default function ProductPage({
                     </div>
                   </div>
 
-                  {/* Trust Badges */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 p-2 rounded-xl bg-accent/50">
-                      <Shield className="size-4 text-green-600" />
-                      <span className="text-xs font-medium">
-                        Secure Purchase
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 rounded-xl bg-accent/50">
-                      <CheckCircle2 className="size-4 text-blue-600" />
-                      <span className="text-xs font-medium">
-                        Instant Access
-                      </span>
-                    </div>
-                  </div>
+
+
 
                   {/* Tags */}
                   {product.tags && product.tags.length > 0 && (
@@ -450,15 +433,10 @@ export default function ProductPage({
                 </CardContent>
               </Card>
             </div>
-
-            {/* Thumbnail Grid */}
           </div>
 
-          {/* Product Info and Content Grid */}
-          <div className="  gap-8">
-            {/* Left Sidebar - Product Details (1/3) */}
-
-            {/* Right Content Area - Rich Text Content (2/3) */}
+          {/* Product Info and Content */}
+          <div className="gap-8">
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
@@ -541,7 +519,7 @@ export default function ProductPage({
                         price={
                           relatedProduct.price === 0
                             ? "Free"
-                            : `$${relatedProduct.price}`
+                            : `${relatedProduct.price}`
                         }
                         rating={relatedProduct.rating}
                         sold={relatedProduct.sold}

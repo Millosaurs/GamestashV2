@@ -24,7 +24,7 @@ export const products = pgTable(
     slug: varchar("slug", { length: 128 }).notNull(), // for /product/:id or /product/:slug
     name: varchar("name", { length: 256 }).notNull(),
     description: text("description").notNull(),
-    text: text("content").notNull(),
+    content: text("content").notNull(),
     price: numeric("price", { precision: 10, scale: 2 }).notNull().default("0"),
     originalPrice: numeric("original_price", { precision: 10, scale: 2 })
       .notNull()
