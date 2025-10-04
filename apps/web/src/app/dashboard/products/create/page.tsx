@@ -26,6 +26,7 @@ import {
 import { RichTextEditor } from "@/components/rich-text-editor";
 import { ProductPreview } from "@/components/product-preview";
 import { cn } from "@/lib/utils";
+import { Suspense } from "react";
 
 // Mock data - would come from API in production
 const mockPlatforms = [
@@ -83,6 +84,14 @@ interface FormErrors {
 }
 
 export default function ProductFormPage() {
+  return (
+    <Suspense fallback={<Loader2 className="animate-spin" />}>
+      <ProductFormContent />
+    </Suspense>
+  );
+}
+
+function ProductFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const productId = searchParams.get("id"); // Get product ID from URL for editing
