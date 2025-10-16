@@ -132,7 +132,7 @@ export function OverlayCard({
             fill
             className={cn(
               "object-cover transition-transform duration-500",
-              hoverEffect && "group-hover:scale-105"
+              hoverEffect && "group-hover:scale-101"
             )}
           />
 
@@ -152,18 +152,7 @@ export function OverlayCard({
             </div>
           )}
 
-          {/* Hover CTA Overlay */}
-          {(href || onClick || onCtaClick) && hoverEffect && (
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-20">
-              <Button
-                variant="secondary"
-                className="shadow-lg"
-                onClick={onCtaClick}
-              >
-                {ctaText}
-              </Button>
-            </div>
-          )}
+          
         </div>
 
         {/* Pinned Overlay Card */}

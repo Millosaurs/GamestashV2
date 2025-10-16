@@ -103,7 +103,7 @@ const CustomImage = Image.extend({
       deleteBtn.type = 'button';
       deleteBtn.contentEditable = 'false';
       deleteBtn.className = 'delete-image-btn';
-      deleteBtn.style.cssText = 'position: absolute; top: 0.5rem; right: 0.5rem; background-color: hsl(var(--secondary)); border: none; border-radius: 0.375rem; padding: 0.375rem; cursor: pointer; opacity: 0; transition: all 0.2s; z-index: 10; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);';
+      deleteBtn.style.cssText = 'position: absolute; top: 0.5rem; right: 0.5rem; background-color: rgb(0 0 0 / 0.5); border: none; border-radius: 0.375rem; padding: 0.375rem; cursor: pointer; opacity: 0; transition: opacity 0.2s; z-index: 10; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);';
       deleteBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgb(239, 68, 68)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
 
       deleteBtn.addEventListener('mousedown', (e) => {
@@ -123,7 +123,6 @@ const CustomImage = Image.extend({
           (window as any).__deleteImageFromEditor?.({ src, fileKey, pos, editor });
         }
       });
-
       wrapper.addEventListener('mouseenter', () => {
         deleteBtn.style.opacity = '1';
       });
@@ -131,6 +130,8 @@ const CustomImage = Image.extend({
       wrapper.addEventListener('mouseleave', () => {
         deleteBtn.style.opacity = '0';
       });
+
+
 
       wrapper.appendChild(img);
       wrapper.appendChild(deleteBtn);

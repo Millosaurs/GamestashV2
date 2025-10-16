@@ -17,7 +17,7 @@
 
 /* Delete button hover effect */
 .ProseMirror .delete-image-btn:hover {
-  background-color: hsl(var(--secondary) / 0.8) !important;
+  background-color: rgb(0 0 0 / 0.5 ) !important;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
 }
 
@@ -52,6 +52,7 @@
 
   .ProseMirror .delete-image-btn {
     opacity: 1 !important; /* Always show on mobile */
+    background-color: rgb(0 0 0 / 0.5 ) !important;
   }
 }
 
