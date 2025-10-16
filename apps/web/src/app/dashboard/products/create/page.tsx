@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Save, Loader2, Check, AlertCircle } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Check, AlertCircle, ImageUp } from "lucide-react";
 import { Button } from "@/components/animate-ui/components/buttons/button";
 import {
   Card,
@@ -27,53 +27,31 @@ import { RichTextEditor } from "@/components/rich-text-editor";
 import { ProductPreview } from "@/components/product-preview";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";
+import ImageUpload from "@/components/ImageUploader";
+import { FileUpload } from "@/components/FileUpload";
+import { orpc } from "@/utils/orpc";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useSession } from "@/lib/auth-client";
 
-// Mock data - would come from API in production
-const mockPlatforms = [
-  { id: "steam", name: "Steam" },
-  { id: "epic", name: "Epic Games" },
-  { id: "gog", name: "GOG" },
-  { id: "itch", name: "itch.io" },
-  { id: "origin", name: "Origin" },
-];
-
-const mockCategories = [
-  { id: "action", name: "Action" },
-  { id: "adventure", name: "Adventure" },
-  { id: "rpg", name: "RPG" },
-  { id: "strategy", name: "Strategy" },
-  { id: "simulation", name: "Simulation" },
-  { id: "puzzle", name: "Puzzle" },
-  { id: "racing", name: "Racing" },
-  { id: "sports", name: "Sports" },
-];
-
-// Mock product for editing (in production, fetch from API using productId)
-const mockProduct = {
-  id: "1",
-  name: "Cyber Legends",
-  description:
-    "<p>A futuristic RPG set in a cyberpunk world with immersive storytelling.</p>",
-  price: "29.99",
-  originalPrice: "39.99",
-  discount: 25,
-  platformId: "steam",
-  categoryId: "rpg",
-  image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400",
-  isFeatured: true,
-  isNew: false,
-  tags: "cyberpunk, rpg, story-rich",
-};
 
 interface ProductFormData {
   name: string;
+  slug: string;
   description: string;
+  content: string;
   price: string;
   originalPrice: string;
   discount: number;
   platformId: string;
   categoryId: string;
   image: string;
+  files: Array<{
+    name: string;
+    key: string;
+    size: number;
+    type: string;
+  }>;
   isFeatured: boolean;
   isNew: boolean;
   tags: string;
@@ -94,41 +72,127 @@ export default function ProductFormPage() {
 function ProductFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const productId = searchParams.get("id"); // Get product ID from URL for editing
+  const productId = searchParams.get("id");
   const isEditMode = !!productId;
+  const { data: session } = useSession();
 
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [isSaved, setIsSaved] = React.useState(false);
   const [errors, setErrors] = React.useState<FormErrors>({});
-  const [isDataLoading, setIsDataLoading] = React.useState(isEditMode);
 
-  // Initialize form data - empty for create, populated for edit
+  // Initialize form data
   const [formData, setFormData] = React.useState<ProductFormData>({
     name: "",
+    slug: "",
     description: "",
+    content: "",
     price: "",
     originalPrice: "",
     discount: 0,
     platformId: "",
     categoryId: "",
     image: "",
+    files: [],
     isFeatured: false,
     isNew: false,
     tags: "",
   });
 
-  // Load product data if in edit mode
-  React.useEffect(() => {
-    if (isEditMode && productId) {
-      // Simulate API call to fetch product data
-      setIsDataLoading(true);
-      setTimeout(() => {
-        // In production: const data = await fetch(`/api/products/${productId}`)
-        setFormData(mockProduct);
-        setIsDataLoading(false);
-      }, 500);
+  // Fetch platforms
+  const { data: platforms = [] } = useQuery({
+    ...orpc.platforms.list.queryOptions(),
+    staleTime: 300000, // Cache for 5 minutes
+  });
+
+  // Fetch all categories
+  const { data: allCategories = [] } = useQuery({
+    ...orpc.categories.list.queryOptions(),
+    staleTime: 300000, // Cache for 5 minutes
+  });
+
+  // Fetch categories for selected platform
+  const {
+    data: selectedPlatformCategories = [],
+    isLoading: selectedCategoriesLoading,
+  } = useQuery({
+    ...orpc.categories.byPlatform.queryOptions({
+      input: { platformId: formData.platformId },
+    }),
+    enabled: !!formData.platformId,
+    staleTime: 300000, // Cache for 5 minutes
+  });
+
+  // Get available categories based on selected platform
+  const availableCategories = React.useMemo(() => {
+    if (!formData.platformId) {
+      return [];
     }
-  }, [isEditMode, productId]);
+    return selectedPlatformCategories.filter((cat: any) => cat.id !== "all");
+  }, [formData.platformId, selectedPlatformCategories]);
+
+  // Fetch existing product if editing
+  const { data: existingProduct, isLoading: isLoadingProduct } = useQuery({
+    ...orpc.products.get.queryOptions({ input: { id: productId || "" } }),
+    enabled: isEditMode && !!productId,
+  });
+
+  // Populate form when editing
+  React.useEffect(() => {
+    if (existingProduct && isEditMode) {
+      setFormData({
+        name: existingProduct.name || "",
+        slug: existingProduct.slug || "",
+        description: existingProduct.description || "",
+        content: existingProduct.content || "",
+        price: existingProduct.price?.toString() || "",
+        originalPrice: existingProduct.originalPrice?.toString() || "",
+        discount: existingProduct.discount || 0,
+        platformId: existingProduct.platform || "",
+        categoryId: existingProduct.category || "",
+        image: existingProduct.image || "",
+        files: [],
+        isFeatured: existingProduct.isFeatured || false,
+        isNew: existingProduct.isNew || false,
+        tags: Array.isArray(existingProduct.tags) ? existingProduct.tags.join(", ") : "",
+      });
+    }
+  }, [existingProduct, isEditMode]);
+
+  // Create product mutation
+  const createProductMutation = useMutation({
+    ...orpc.products.create.mutationOptions(),
+    onSuccess: (data) => {
+      toast.success("Product created successfully!", {
+        description: `${data.product.name} has been added to your catalog.`,
+      });
+      setTimeout(() => {
+        router.push("/dashboard/products");
+      }, 1000);
+    },
+    onError: (error) => {
+      toast.error("Failed to create product", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    },
+  });
+
+  // Update product mutation
+  const updateProductMutation = useMutation({
+    ...orpc.products.update.mutationOptions(),
+    onSuccess: (data) => {
+      toast.success("Product updated successfully!", {
+        description: `${data.product.name} has been updated.`,
+      });
+      setTimeout(() => {
+        router.push("/dashboard/products");
+      }, 1000);
+    },
+    onError: (error) => {
+      toast.error("Failed to update product", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    },
+  });
+
+  const isLoading = createProductMutation.isPending || updateProductMutation.isPending;
 
   // Handle input changes
   const handleInputChange = (field: keyof ProductFormData, value: any) => {
@@ -143,7 +207,24 @@ function ProductFormContent() {
     }
   };
 
-  // Calculate discount automatically when prices change
+  // Reset category when platform changes
+  React.useEffect(() => {
+    if (formData.platformId) {
+      setFormData((prev) => ({ ...prev, categoryId: "" }));
+    }
+  }, [formData.platformId]);
+
+  // Auto-generate random slug
+  React.useEffect(() => {
+    if (!isEditMode && !formData.slug) {
+      const randomString = Math.random().toString(36).substring(2, 15) +
+                          Math.random().toString(36).substring(2, 15);
+      const slug = `product-${randomString}`;
+      setFormData((prev) => ({ ...prev, slug }));
+    }
+  }, [isEditMode, formData.slug]);
+
+  // Calculate discount automatically
   React.useEffect(() => {
     if (formData.price && formData.originalPrice) {
       const price = parseFloat(formData.price);
@@ -167,15 +248,23 @@ function ProductFormContent() {
       newErrors.name = "Product name is required";
     }
 
-    if (!formData.description.trim() || formData.description === "<p></p>") {
-      newErrors.description = "Product description is required";
+    if (!formData.slug?.trim()) {
+      newErrors.slug = "Slug is required";
     }
 
-    if (!formData.price || parseFloat(formData.price) <= 0) {
+    if (!formData.description.trim()) {
+      newErrors.description = "Short description is required";
+    }
+
+    if (!formData.content || formData.content.trim() === "" || formData.content === "<p></p>") {
+      newErrors.content = "Detailed description is required";
+    }
+
+    if (!formData.price || parseFloat(formData.price) < 0) {
       newErrors.price = "Valid price is required";
     }
 
-    if (!formData.originalPrice || parseFloat(formData.originalPrice) <= 0) {
+    if (!formData.originalPrice || parseFloat(formData.originalPrice) < 0) {
       newErrors.originalPrice = "Valid original price is required";
     }
 
@@ -195,22 +284,12 @@ function ProductFormContent() {
       newErrors.categoryId = "Category selection is required";
     }
 
-    if (formData.image && !isValidUrl(formData.image)) {
-      newErrors.image = "Please enter a valid image URL";
+    if (!formData.image) {
+      newErrors.image = "Product image is required";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  // Helper to validate URL
-  const isValidUrl = (url: string): boolean => {
-    try {
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
   };
 
   // Handle form submission
@@ -218,68 +297,71 @@ function ProductFormContent() {
     e.preventDefault();
 
     if (!validateForm()) {
-      // Scroll to first error
+      toast.error("Please fix all errors before submitting");
       const firstErrorField = Object.keys(errors)[0];
       const element = document.getElementById(firstErrorField);
       element?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
-    setIsLoading(true);
+    // Check if user is authenticated
+    if (!session?.user) {
+      toast.error("You must be logged in to create products");
+      return;
+    }
 
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Get user info from Better Auth session
+    const author = session.user.name || "Unknown User";
+    const authorId = session.user.id;
 
-      // In production, you would make an actual API call:
-      // if (isEditMode) {
-      //   await fetch(`/api/products/${productId}`, {
-      //     method: 'PUT',
-      //     headers: { 'Content-Type': 'application/json' },
-      //     body: JSON.stringify(formData),
-      //   });
-      // } else {
-      //   await fetch('/api/products', {
-      //     method: 'POST',
-      //     headers: { 'Content-Type': 'application/json' },
-      //     body: JSON.stringify(formData),
-      //   });
-      // }
+    // Parse tags
+    const tags = formData.tags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
 
-      setIsSaved(true);
+    const productData = {
+      name: formData.name,
+      slug: formData.slug,
+      description: formData.description,
+      content: formData.content || "",
+      price: formData.price,
+      originalPrice: formData.originalPrice,
+      discount: formData.discount,
+      platformId: formData.platformId,
+      categoryId: formData.categoryId,
+      image: formData.image,
+      files: formData.files,
+      author,
+      authorId,
+      tags,
+      isFeatured: formData.isFeatured,
+      isNew: formData.isNew,
+    };
 
-      // Redirect to products page after a short delay
-      setTimeout(() => {
-        router.push("/dashboard/products");
-      }, 1500);
-    } catch (error) {
-      console.error(
-        `Error ${isEditMode ? "updating" : "creating"} product:`,
-        error
-      );
-      setErrors({
-        submit: `Failed to ${
-          isEditMode ? "update" : "create"
-        } product. Please try again.`,
+    if (isEditMode && productId) {
+      updateProductMutation.mutate({
+        id: productId,
+        ...productData,
       });
-    } finally {
-      setIsLoading(false);
+    } else {
+      createProductMutation.mutate(productData);
     }
   };
 
   // Get selected platform/category name
   const getSelectedPlatformName = () => {
-    const platform = mockPlatforms.find((p) => p.id === formData.platformId);
+    const platform = platforms.find((p: any) => p.id === formData.platformId);
     return platform ? platform.name : "Select Platform";
   };
 
   const getSelectedCategoryName = () => {
-    const category = mockCategories.find((c) => c.id === formData.categoryId);
+    const category = availableCategories.find((c: any) => c.id === formData.categoryId);
     return category ? category.name : "Select Category";
   };
 
   // Show loading state while fetching data in edit mode
-  if (isDataLoading) {
+  if (isEditMode && isLoadingProduct) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -317,13 +399,6 @@ function ProductFormContent() {
                   : "Add a new product to your catalog"}
               </p>
             </div>
-
-            {isSaved && (
-              <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                <Check className="h-4 w-4" />
-                Product {isEditMode ? "updated" : "created"} successfully!
-              </div>
-            )}
           </div>
         </div>
 
@@ -353,66 +428,111 @@ function ProductFormContent() {
                         onChange={(e) =>
                           handleInputChange("name", e.target.value)
                         }
-                        placeholder="Enter product name"
+                        placeholder="e.g., Cyber Legends RPG Pack"
                         className={cn(
-                          "rounded-xl mt-2",
+                          "mt-1.5",
                           errors.name && "border-destructive"
                         )}
+                        disabled={isLoading}
                       />
                       {errors.name && (
-                        <p className="text-sm text-destructive mt-1 flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" />
+                        <p className="text-sm text-destructive mt-1.5 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5" />
                           {errors.name}
                         </p>
                       )}
                     </div>
 
-                    {/* Product Description - Rich Text Editor */}
+                    {/* Short Description */}
                     <div>
                       <Label htmlFor="description">
-                        Product Description{" "}
-                        <span className="text-destructive">*</span>
+                        Short Description <span className="text-destructive">*</span>
                       </Label>
-                      <div className="mt-2">
-                        <RichTextEditor
-                          content={formData.description}
-                          onChange={(content) =>
-                            handleInputChange("description", content)
-                          }
-                          placeholder="Write a detailed description of your product..."
-                          error={!!errors.description}
-                        />
-                      </div>
+                      <Input
+                        id="description"
+                        value={formData.description || ""}
+                        onChange={(e) =>
+                          handleInputChange("description", e.target.value)
+                        }
+                        placeholder="e.g., A complete RPG pack with characters, items, and environments"
+                        className={cn(
+                          "mt-1.5",
+                          errors.description && "border-destructive"
+                        )}
+                        disabled={isLoading}
+                        maxLength={200}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1.5">
+                        Brief summary of your product (max 200 characters)
+                      </p>
                       {errors.description && (
-                        <p className="text-sm text-destructive mt-1 flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" />
+                        <p className="text-sm text-destructive mt-1.5 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5" />
                           {errors.description}
                         </p>
                       )}
                     </div>
 
-                    {/* Image URL */}
+                    {/* Product Content - Rich Text Editor */}
                     <div>
-                      <Label htmlFor="image">Product Image URL</Label>
-                      <Input
-                        id="image"
-                        type="url"
-                        value={formData.image}
-                        onChange={(e) =>
-                          handleInputChange("image", e.target.value)
-                        }
-                        placeholder="https://example.com/image.jpg"
-                        className={cn(
-                          "rounded-xl mt-2",
-                          errors.image && "border-destructive"
-                        )}
-                      />
-                      {errors.image && (
+                      <Label htmlFor="content">
+                        Detailed Description{" "}
+                        <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="mt-2">
+                        <RichTextEditor
+                          content={formData.content}
+                          onChange={(content) =>
+                            handleInputChange("content", content)
+                          }
+                          placeholder="Write a detailed description of your product..."
+                          error={!!errors.content}
+                        />
+                      </div>
+                      {errors.content && (
                         <p className="text-sm text-destructive mt-1 flex items-center gap-1">
                           <AlertCircle className="h-3 w-3" />
+                          {errors.content}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Image Upload */}
+                    <div>
+                      <Label htmlFor="image">
+                        Product Image <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="mt-1.5">
+                        <ImageUpload
+                          value={formData.image}
+                          onChange={(url) => handleInputChange("image", url)}
+                          disabled={isLoading}
+                        />
+                      </div>
+                      {errors.image && (
+                        <p className="text-sm text-destructive mt-1.5 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5" />
                           {errors.image}
                         </p>
                       )}
+                    </div>
+
+                    {/* File Upload */}
+                    <div>
+                      <Label htmlFor="files">
+                        Product Files (Assets/Downloads)
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Upload downloadable files for your product (optional)
+                      </p>
+                      <div className="mt-1.5">
+                        <FileUpload
+                          value={formData.files}
+                          onChange={(files) => handleInputChange("files", files)}
+                          disabled={isLoading}
+                          maxFiles={5}
+                        />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -536,7 +656,7 @@ function ProductFormContent() {
                               Select Platform
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            {mockPlatforms.map((platform) => (
+                            {platforms.map((platform: any) => (
                               <DropdownMenuItem
                                 key={platform.id}
                                 onClick={() =>
@@ -574,12 +694,24 @@ function ProductFormContent() {
                             <Button
                               type="button"
                               variant="outline"
+                              disabled={!formData.platformId || selectedCategoriesLoading}
                               className={cn(
                                 "w-full justify-start mt-2 rounded-xl",
                                 errors.categoryId && "border-destructive"
                               )}
                             >
-                              {getSelectedCategoryName()}
+                              {selectedCategoriesLoading ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Loading categories...
+                                </>
+                              ) : !formData.platformId ? (
+                                "Select platform first"
+                              ) : availableCategories.length === 0 ? (
+                                "No categories available"
+                              ) : (
+                                getSelectedCategoryName()
+                              )}
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent className="w-56 rounded-xl">
@@ -587,26 +719,37 @@ function ProductFormContent() {
                               Select Category
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            {mockCategories.map((category) => (
-                              <DropdownMenuItem
-                                key={category.id}
-                                onClick={() =>
-                                  handleInputChange("categoryId", category.id)
-                                }
-                                className={
-                                  formData.categoryId === category.id
-                                    ? "bg-accent"
-                                    : ""
-                                }
-                              >
-                                {formData.categoryId === category.id && (
-                                  <Check className="h-4 w-4 mr-2" />
-                                )}
-                                {category.name}
-                              </DropdownMenuItem>
-                            ))}
+                            {availableCategories.length > 0 ? (
+                              availableCategories.map((category: any) => (
+                                <DropdownMenuItem
+                                  key={category.id}
+                                  onClick={() =>
+                                    handleInputChange("categoryId", category.id)
+                                  }
+                                  className={
+                                    formData.categoryId === category.id
+                                      ? "bg-accent"
+                                      : ""
+                                  }
+                                >
+                                  {formData.categoryId === category.id && (
+                                    <Check className="h-4 w-4 mr-2" />
+                                  )}
+                                  {category.name}
+                                </DropdownMenuItem>
+                              ))
+                            ) : (
+                              <div className="px-2 py-6 text-center text-sm text-muted-foreground">
+                                No categories for this platform
+                              </div>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        {!formData.platformId && (
+                          <p className="text-xs text-muted-foreground mt-1.5">
+                            Please select a platform first to see available categories
+                          </p>
+                        )}
                         {errors.categoryId && (
                           <p className="text-sm text-destructive mt-1 flex items-center gap-1">
                             <AlertCircle className="h-3 w-3" />
@@ -684,17 +827,7 @@ function ProductFormContent() {
                   </CardContent>
                 </Card> */}
 
-                {/* Submit Error */}
-                {errors.submit && (
-                  <Card className="border-destructive">
-                    <CardContent className="pt-6">
-                      <div className="flex items-center gap-2 text-destructive">
-                        <AlertCircle className="h-5 w-5" />
-                        <p>{errors.submit}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
+
 
                 {/* Actions */}
                 <Card className="bg-background border-0 ">
@@ -737,8 +870,8 @@ function ProductFormContent() {
           <div className="xl:sticky xl:top-6 xl:h-fit">
             <ProductPreview
               formData={formData}
-              mockPlatforms={mockPlatforms}
-              mockCategories={mockCategories}
+              mockPlatforms={platforms}
+              mockCategories={allCategories}
             />
           </div>
         </div>

@@ -18,11 +18,13 @@ import {
   Award,
   Eye,
 } from "lucide-react";
+import { useSession } from "@/lib/auth-client";
 
 interface ProductPreviewProps {
   formData: {
     name: string;
     description: string;
+    content: string;
     price: string;
     originalPrice: string;
     discount: number;
@@ -72,6 +74,8 @@ export function ProductPreview({
 
   // Check if image URL is valid
   const isValidImage = formData.image && formData.image.startsWith("http");
+
+    const { data: session } = useSession();
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -156,11 +160,11 @@ export function ProductPreview({
               <div className="flex items-center gap-2">
                 <Avatar className="size-6">
                   <AvatarFallback className="text-xs bg-accent text-accent-foreground">
-                    Y
+                    {session?.user.image || "Y"}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm text-muted-foreground">by</span>
-                <span className="text-sm font-medium">You</span>
+                <span className="text-sm font-medium">{session?.user?.name || "You"}</span>
               </div>
             </div>
 
@@ -276,27 +280,40 @@ export function ProductPreview({
         </Card>
       </div>
 
-      {/* Product Information Section */}
+      {/* Short Description Section */}
+      {formData.description && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">About This Product</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground leading-relaxed">
+              {formData.description}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Detailed Content Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="size-5" />
-            Product Information
+            Detailed Description
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Short Description */}
-          {formData.description && formData.description !== "<p></p>" ? (
+          {formData.content && formData.content !== "<p></p>" ? (
             <div
-              className="prose prose-sm max-w-none text-muted-foreground"
+              className="prose prose-sm max-w-none dark:prose-invert"
               dangerouslySetInnerHTML={{
-                __html: formData.description,
+                __html: formData.content,
               }}
             />
           ) : (
-            <div className="p-4 rounded-lg bg-muted/30 border border-dashed">
+            <div className="p-8 rounded-lg bg-muted/30 border border-dashed">
               <p className="text-sm text-muted-foreground text-center">
-                Product description will appear here
+                Detailed product description will appear here
               </p>
             </div>
           )}

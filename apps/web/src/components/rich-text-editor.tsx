@@ -107,6 +107,13 @@ export function RichTextEditor({
     },
   });
 
+  // Update editor content when content prop changes (e.g., when loading existing product)
+  React.useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content);
+    }
+  }, [editor, content]);
+
   // toolbar button
   const ToolbarButton = ({
     onClick,

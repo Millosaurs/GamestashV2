@@ -14,6 +14,7 @@ import {
 import { platforms } from "./platforms";
 import { categories } from "./categories";
 import { user } from "./auth";
+import { json } from "drizzle-orm/singlestore-core";
 
 export const products = pgTable(
   "products",
@@ -40,7 +41,13 @@ export const products = pgTable(
     reviewCount: integer("review_count").notNull().default(0),
     sold: integer("sold").notNull().default(0),
 
-    image: varchar("image", { length: 512 }),
+    image: text("image").notNull(),
+    files: jsonb("files").$type<{
+      name: string;
+      key: string;
+      size: number;
+      type: string;
+    }[]>().default([]),
     author: varchar("author", { length: 128 }).notNull(),
     authorId: varchar("author_id", { length: 64 }).references(() => user.id, {
       onDelete: "set null",

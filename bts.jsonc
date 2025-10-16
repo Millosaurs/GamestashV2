@@ -12,7 +12,7 @@
 	"frontend": ["next"],
 	"addons": ["turborepo", "fumadocs", "oxlint"],
 	"examples": [],
-	"auth": true,
+	"auth": "better-auth",
 	"packageManager": "bun",
 	"dbSetup": "none",
 	"api": "orpc",

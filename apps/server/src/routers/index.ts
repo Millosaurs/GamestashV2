@@ -3,6 +3,7 @@ import { protectedProcedure, publicProcedure } from "../lib/orpc";
 import { categoriesRoute } from "../lib/procedures/categories";
 import { productsRoute } from "../lib/procedures/products";
 import { userRouter } from "../lib/procedures/user";
+import { uploadRoute } from "../lib/procedures/upload";
 
 export const appRouter = {
   healthCheck: publicProcedure.handler(() => {
@@ -17,6 +18,7 @@ export const appRouter = {
   platforms: platformsRoute,
   categories: categoriesRoute,
   products: productsRoute,
+  upload: uploadRoute,
   user: userRouter,
 };
 

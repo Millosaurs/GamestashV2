@@ -56,6 +56,13 @@ const CreateProductSchema = z.object({
   discount: z.number().min(0).max(100).optional().default(0),
   platformId: z.string().min(1, "Platform is required"),
   categoryId: z.string().min(1, "Category is required"),
+  image: z.string().url("Valid image URL is required"),
+  files: z.array(z.object({
+    name: z.string(),
+    key: z.string(),
+    size: z.number(),
+    type: z.string(),
+  })).optional().default([]),
   author: z.string().min(1, "Author name is required"),
   authorId: z.string().min(1, "Author ID is required"),
   tags: z.array(z.string()).optional().default([]),
@@ -75,6 +82,13 @@ const UpdateProductSchema = z.object({
   discount: z.number().min(0).max(100).optional(),
   platformId: z.string().optional(),
   categoryId: z.string().optional(),
+  image: z.string().url().optional(),
+  files: z.array(z.object({
+    name: z.string(),
+    key: z.string(),
+    size: z.number(),
+    type: z.string(),
+  })).optional().default([]),
   author: z.string().optional(),
   tags: z.array(z.string()).optional(),
   isFeatured: z.boolean().optional(),
@@ -88,9 +102,6 @@ export const createProduct = os
     const input = opt.input;
 
     try {
-      // Hardcoded placeholder image
-      const image = "/placeholder.svg";
-
       // Insert the product
       const result = await db
         .insert(products)
@@ -102,22 +113,21 @@ export const createProduct = os
           content: input.content || "",
           price: input.price,
           originalPrice: input.originalPrice,
-          discount: input.discount,
+          discount: input.discount || 0,
           platformId: input.platformId,
           categoryId: input.categoryId,
-          image: image,
+          image: input.image,
+          files: input.files || [],
           author: input.author,
           authorId: input.authorId,
-          tags: input.tags,
-          isFeatured: input.isFeatured,
-          isNew: input.isNew,
+          tags: input.tags || [],
+          isFeatured: input.isFeatured || false,
+          isNew: input.isNew || false,
           rating: 0,
           reviewCount: 0,
           sold: 0,
         })
         .returning();
-
-      console.log("Product created successfully:", result[0].id);
 
       return {
         success: true,
@@ -125,7 +135,10 @@ export const createProduct = os
         message: "Product created successfully",
       };
     } catch (error) {
-      console.error("Error creating product:", error);
+      console.error("[PRODUCT ERROR] Failed to create product:", {
+        error: error instanceof Error ? error.message : "Unknown error",
+        productName: input.name,
+      });
       throw new Error("Failed to create product");
     }
   });

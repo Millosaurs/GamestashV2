@@ -824,7 +824,7 @@ export default function DeveloperProductsDashboard() {
                              <DropdownMenuItem
                                onClick={() =>
                                  router.push(
-                                   `/dashboard/products/create?id={product.id}`
+                                   `/dashboard/products/create?id=${product.id}`
                                  )
                                }
                              >
