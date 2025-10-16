@@ -154,7 +154,6 @@ export function OverlayCard({
 
           
         </div>
-
         {/* Pinned Overlay Card */}
         <div className={cn("absolute left-4 right-4 z-25", overlayOffset)}>
           <Card
