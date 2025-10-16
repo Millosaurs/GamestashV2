@@ -41,11 +41,12 @@ export default function UserMenu() {
           <Button
             variant="destructive"
             className="w-full"
-            onClick={() => {
-              authClient.signOut({
+            onClick={async () => {
+              await authClient.signOut({
                 fetchOptions: {
                   onSuccess: () => {
-                    router.push("/");
+                    // Force a hard refresh to clear all state
+                    window.location.href = "/";
                   },
                 },
               });

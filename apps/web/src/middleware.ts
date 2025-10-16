@@ -1,20 +1,5 @@
-import { betterFetch } from "@better-fetch/fetch";
 import { NextRequest, NextResponse } from "next/server";
-
-type Session = {
-  session: {
-    id: string;
-    userId: string;
-    expiresAt: Date;
-    token: string;
-  };
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    image?: string;
-  };
-};
+import { getSessionCookie } from "better-auth/cookies";
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -22,80 +7,56 @@ export async function middleware(request: NextRequest) {
   console.log("\n=== MIDDLEWARE TRIGGERED ===");
   console.log("[Middleware] Pathname:", pathname);
   console.log("[Middleware] Full URL:", request.url);
+  console.log("[Middleware] Environment:", process.env.NODE_ENV);
 
-  // Only protect dashboard routes
-  if (!pathname.startsWith("/dashboard")) {
-    console.log("[Middleware] Not a dashboard route, allowing access");
-    return NextResponse.next();
-  }
+  // Debug: Log all cookies
+  const allCookies = request.cookies.getAll();
+  console.log("[Middleware] Total cookies:", allCookies.length);
+  console.log("[Middleware] Cookie names:", allCookies.map(c => c.name).join(", "));
 
-  console.log("[Middleware] Dashboard route detected, checking authentication...");
+  // Check for Better Auth session token specifically
+  const betterAuthToken = request.cookies.get("better-auth.session_token");
+  console.log("[Middleware] better-auth.session_token present:", !!betterAuthToken);
+  console.log("[Middleware] better-auth.session_token value:", betterAuthToken?.value?.substring(0, 20) + "...");
 
-  const authServer = process.env.NEXT_PUBLIC_SERVER_URL;
-  console.log("[Middleware] Auth server URL:", authServer);
+  // Use Better Auth's built-in cookie checker
+  // This checks for the session cookie existence
+  const sessionCookie = getSessionCookie(request);
 
-  if (!authServer) {
-    console.error("[Middleware] CRITICAL: NEXT_PUBLIC_SERVER_URL is not set!");
+  console.log("[Middleware] getSessionCookie result:", !!sessionCookie);
+  console.log("[Middleware] Session cookie value:", sessionCookie ? "exists" : "missing");
+
+  if (!sessionCookie) {
+    console.log("[Middleware] ❌ No session cookie found, redirecting to auth");
+
+    // Redirect to auth page with callback
     const url = request.nextUrl.clone();
     url.pathname = "/auth";
     url.searchParams.set("callback", pathname);
-    console.log("[Middleware] Redirecting to:", url.toString());
+
+    console.log("[Middleware] 🔒 Redirecting to:", url.toString());
+    console.log("=== MIDDLEWARE END ===\n");
+
     return NextResponse.redirect(url);
   }
 
-  const cookie = request.headers.get("cookie") || "";
-  console.log("[Middleware] Cookie present:", !!cookie);
-  console.log("[Middleware] Cookie value:", cookie.substring(0, 50) + "...");
-
-  try {
-    console.log("[Middleware] Fetching session from:", `${authServer}/api/auth/get-session`);
-
-    // Use better-fetch to get session
-    const { data: session, error } = await betterFetch<Session>(
-      "/api/auth/get-session",
-      {
-        baseURL: authServer,
-        headers: {
-          cookie: cookie,
-        },
-      }
-    );
-
-    console.log("[Middleware] Session response:", {
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      hasSessionData: !!session?.session,
-      error: error,
-    });
-
-    // Check if session exists and is valid
-    if (session?.user && session?.session) {
-      console.log("[Middleware] ✅ Valid session found, allowing access");
-      console.log("[Middleware] User:", session.user.email);
-      return NextResponse.next();
-    }
-
-    // Log error if present
-    if (error) {
-      console.error("[Middleware] ❌ Session fetch error:", error);
-    } else {
-      console.log("[Middleware] ❌ No valid session found");
-    }
-  } catch (error) {
-    console.error("[Middleware] ❌ EXCEPTION in session validation:", error);
-  }
-
-  // No valid session, redirect to auth page
-  const url = request.nextUrl.clone();
-  url.pathname = "/auth";
-  url.searchParams.set("callback", pathname);
-  console.log("[Middleware] 🔒 Redirecting to auth:", url.toString());
+  console.log("[Middleware] ✅ Session cookie found, allowing access");
   console.log("=== MIDDLEWARE END ===\n");
-  return NextResponse.redirect(url);
+
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
+    /*
+     * Match all dashboard routes including:
+     * - /dashboard
+     * - /dashboard/products
+     * - /dashboard/products/create
+     * - /dashboard/settings
+     * - etc.
+     */
+    "/dashboard",
     "/dashboard/:path*",
   ],
 };
