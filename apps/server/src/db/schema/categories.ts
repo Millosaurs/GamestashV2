@@ -12,7 +12,7 @@ import { platforms } from "./platforms";
 export const categories = pgTable(
   "categories",
   {
-    id: varchar("id", { length: 64 }).notNull(), // "plugins", "mods", etc. Also allow "all" if you plan to keep it.
+    id: varchar("id", { length: 64 }).primaryKey(), // "plugins", "mods", etc. Also allow "all" if you plan to keep it.
     name: varchar("name", { length: 128 }).notNull(),
     platformId: varchar("platform_id", { length: 64 })
       .references(() => platforms.id, { onDelete: "cascade" })
@@ -28,10 +28,7 @@ export const categories = pgTable(
       .notNull(),
   },
   (table) => ({
-    pk: primaryKey({
-      columns: [table.platformId, table.id],
-      name: "categories_pk",
-    }),
+    idIdx: uniqueIndex("categories_id_idx").on(table.id),
     uniqNamePerPlatform: uniqueIndex("categories_platform_name_uidx").on(
       table.platformId,
       table.name

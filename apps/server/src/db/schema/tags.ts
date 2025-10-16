@@ -6,6 +6,7 @@ import {
   primaryKey,
   uniqueIndex,
   integer,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { products } from "./products";
 
@@ -29,7 +30,7 @@ export const tags = pgTable(
 export const productTags = pgTable(
   "product_tags",
   {
-    productId: integer("product_id")
+    productId: uuid("product_id")
       .references(() => products.id, { onDelete: "cascade" })
       .notNull(),
     tagId: integer("tag_id")

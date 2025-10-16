@@ -21,6 +21,7 @@ import {
   Loader2,
   AlertCircle,
   ArrowLeft,
+  Box,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -429,7 +430,6 @@ function DeveloperDashboard({ userId }: { userId: string }) {
             <p className="text-xs text-muted-foreground">Published products</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -504,8 +504,8 @@ function DeveloperDashboard({ userId }: { userId: string }) {
           <CardContent className="space-y-2">
             <Link href="/dashboard/products">
               <Button className="w-full justify-start" variant="outline">
-                <Plus className="mr-2 h-4 w-4" />
-                Create New Product
+                <Box className="mr-2 h-4 w-4" />
+                 Your products
               </Button>
             </Link>
             <Button className="w-full justify-start" variant="outline">
@@ -734,9 +734,30 @@ export default function Dashboard() {
                 Back to Market
               </Button>
             </Link>
-            <h1 className="text-3xl font-bold text-foreground">
-              Welcome back, {session.user.name}!
-            </h1>
+            <div className="flex items-center gap-4 w-full justify-between">
+              <div className="flex items-center gap-4">
+                {session.user.image && (
+                  <img
+                    src={session.user.image ?? undefined}
+                    alt="User avatar"
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                )}
+                <h1 className="text-3xl font-bold text-foreground">
+                  Welcome back, {session.user.name}!
+                </h1>
+              </div>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={async () => {
+                  await signOut();
+                  router.push("/");
+                }}
+              >
+                Sign Out
+              </Button>
+            </div>
             <p className="text-muted-foreground mt-2">
               {userRole === "both"
                 ? "Manage your purchases and products all in one place"
@@ -754,16 +775,6 @@ export default function Dashboard() {
                   ? "Developer"
                   : "User"}
               </UIBadge>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  await signOut();
-                  router.push("/");
-                }}
-              >
-                Sign Out
-              </Button>
             </div>
           </div>
 

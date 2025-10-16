@@ -9,7 +9,9 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "seed:products": "tsx src/scripts/seed-products.ts /home/shrivatsav/projects/gamestashv2/products.csv",
+    "seed:platforms-categories": "tsx src/scripts/seed-platforms-categories.ts"
   },
   "dependencies": {
     "@orpc/client": "^1.8.5",
@@ -17,6 +19,7 @@
     "better-auth": "^1.3.7",
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.2",
+    "csv-parse": "^5.5.6",
     "next": "15.5.0",
     "pg": "^8.14.1",
     "react": "^19.0.0",
@@ -28,6 +31,7 @@
     "zod": "^4.0.13",
     "typescript": "^5",
     "drizzle-kit": "^0.31.2",
-    "@types/pg": "^8.11.11"
+    "@types/pg": "^8.11.11",
+    "tsx": "^4.19.2"
   }
 }

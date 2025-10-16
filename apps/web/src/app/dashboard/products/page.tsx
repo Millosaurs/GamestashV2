@@ -63,6 +63,18 @@ import {
   DialogTrigger,
 } from "@/components/animate-ui/components/radix/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
   Table,
   TableBody,
   TableCell,
@@ -73,23 +85,29 @@ import {
 import { Checkbox } from "@/components/animate-ui/components/radix/checkbox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { orpc } from "@/utils/orpc";
+import { authClient } from "@/lib/auth-client";
 
 // Types based on your schema
 interface Product {
-  id: number;
+  id: string;
   slug: string;
   name: string;
   description: string;
-  price: string;
-  originalPrice: string;
+  price: number;
+  originalPrice: number;
   discount: number;
-  platformId: string;
-  categoryId: string;
+  platform: string;
+  platformName?: string;
+  category: string;
+  categoryName?: string;
   rating: number;
   reviewCount: number;
   sold: number;
   image?: string;
   author: string;
+  authorId?: string;
   isFeatured: boolean;
   isNew: boolean;
   tags?: string[];
@@ -111,107 +129,153 @@ interface ProductFormData {
   tags?: string[];
 }
 
-// Mock data
-const mockPlatforms = [
-  { id: "steam", name: "Steam" },
-  { id: "epic", name: "Epic Games" },
-  { id: "gog", name: "GOG" },
-  { id: "itch", name: "itch.io" },
-  { id: "origin", name: "Origin" },
-];
-
-const mockCategories = [
-  { id: "action", name: "Action" },
-  { id: "adventure", name: "Adventure" },
-  { id: "rpg", name: "RPG" },
-  { id: "strategy", name: "Strategy" },
-  { id: "simulation", name: "Simulation" },
-  { id: "puzzle", name: "Puzzle" },
-  { id: "racing", name: "Racing" },
-  { id: "sports", name: "Sports" },
-];
-
-const mockProducts: Product[] = [
-  {
-    id: 1,
-    slug: "cyber-legends",
-    name: "Cyber Legends",
-    description:
-      "A futuristic RPG set in a cyberpunk world with immersive storytelling.",
-    price: "29.99",
-    originalPrice: "39.99",
-    discount: 25,
-    platformId: "steam",
-    categoryId: "rpg",
-    rating: 4.5,
-    reviewCount: 1250,
-    sold: 5420,
-    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400",
-    author: "John Developer",
-    isFeatured: true,
-    isNew: false,
-    tags: ["cyberpunk", "rpg", "story-rich"],
-    createdAt: "2024-01-15T10:00:00Z",
-    updatedAt: "2024-09-20T14:30:00Z",
-  },
-  {
-    id: 2,
-    slug: "space-explorer",
-    name: "Space Explorer",
-    description: "Explore vast galaxies and build your own space empire.",
-    price: "19.99",
-    originalPrice: "19.99",
-    discount: 0,
-    platformId: "steam",
-    categoryId: "strategy",
-    rating: 4.2,
-    reviewCount: 890,
-    sold: 3210,
-    image: "https://images.unsplash.com/photo-1446776653964-20c1d3a81b06?w=400",
-    author: "John Developer",
-    isFeatured: false,
-    isNew: true,
-    tags: ["space", "strategy", "building"],
-    createdAt: "2024-08-20T10:00:00Z",
-    updatedAt: "2024-09-25T16:45:00Z",
-  },
-  {
-    id: 3,
-    slug: "puzzle-master",
-    name: "Puzzle Master",
-    description: "Challenge your mind with hundreds of unique puzzles.",
-    price: "9.99",
-    originalPrice: "14.99",
-    discount: 33,
-    platformId: "mobile",
-    categoryId: "puzzle",
-    rating: 4.7,
-    reviewCount: 2340,
-    sold: 8750,
-    image: "https://images.unsplash.com/photo-1606092195730-5d7b9af1efc5?w=400",
-    author: "John Developer",
-    isFeatured: false,
-    isNew: false,
-    tags: ["puzzle", "brain-teaser", "casual"],
-    createdAt: "2023-12-10T10:00:00Z",
-    updatedAt: "2024-09-15T12:20:00Z",
-  },
-];
-
 type SortField = "name" | "price" | "rating" | "sold" | "createdAt";
 type SortDirection = "asc" | "desc";
 
 export default function DeveloperProductsDashboard() {
-  const [products, setProducts] = React.useState<Product[]>(mockProducts);
-  const [selectedProducts, setSelectedProducts] = React.useState<number[]>([]);
+  const { data: session } = authClient.useSession();
+  const [selectedProducts, setSelectedProducts] = React.useState<string[]>([]);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [filterPlatform, setFilterPlatform] = React.useState<string>("all");
   const [filterCategory, setFilterCategory] = React.useState<string>("all");
   const [sortField, setSortField] = React.useState<SortField>("createdAt");
   const [sortDirection, setSortDirection] =
     React.useState<SortDirection>("desc");
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [deleteProductId, setDeleteProductId] = React.useState<string | null>(null);
+  const [deleteProductIds, setDeleteProductIds] = React.useState<string[]>([]);
+  const [deleteTimer, setDeleteTimer] = React.useState<number>(5);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  // Delete product mutation
+  const deleteProductMutation = useMutation({
+    mutationFn: (productId: string) =>
+      (orpc as any).products.delete.call({ id: productId }),
+    onMutate: (productId) => {
+      // Optimistically remove the product from the cache
+      queryClient.setQueryData(
+        ["products", "getUserProducts", { userId: session?.user.id || "", limit: 100, sortBy: "newest" }],
+        (oldData: any) => oldData?.filter((product: any) => product.id !== productId) || []
+      );
+    },
+    onSuccess: () => {
+      refetchProducts(); // Refetch to ensure consistency
+      setIsDeleteDialogOpen(false);
+      setDeleteProductId(null);
+      setDeleteProductIds([]);
+      setDeleteTimer(5);
+    },
+    onError: (error, productId) => {
+      console.error("Failed to delete product:", error);
+      // Revert optimistic update on error
+      refetchProducts();
+    },
+  });
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (productIds: string[]) =>
+      (orpc as any).products.bulkDelete.call({ ids: productIds }),
+    onMutate: (productIds) => {
+      // Optimistically remove the products from the cache
+      queryClient.setQueryData(
+        ["products", "getUserProducts", { userId: session?.user.id || "", limit: 100, sortBy: "newest" }],
+        (oldData: any) => oldData?.filter((product: any) => !productIds.includes(product.id)) || []
+      );
+    },
+    onSuccess: () => {
+      refetchProducts(); // Refetch to ensure consistency
+      setIsDeleteDialogOpen(false);
+      setSelectedProducts([]);
+      setDeleteProductId(null);
+      setDeleteProductIds([]);
+      setDeleteTimer(5);
+    },
+    onError: (error, productIds) => {
+      console.error("Failed to bulk delete products:", error);
+      // Revert optimistic update on error
+      refetchProducts();
+    },
+  });
+
+
+
+  // Fetch user's products
+  const {
+    data: products = [],
+    isLoading: productsLoading,
+    error: productsError,
+    refetch: refetchProducts,
+  } = useQuery({
+    ...orpc.products.getUserProducts.queryOptions({
+      input: {
+        userId: session?.user.id || "",
+        limit: 100,
+        sortBy: "newest",
+      },
+    }),
+    enabled: !!session?.user.id,
+    staleTime: 30000, // Cache for 30 seconds
+  });
+
+  // Fetch all categories
+  const {
+    data: allCategories = [],
+    isLoading: allCategoriesLoading,
+    error: allCategoriesError,
+  } = useQuery({
+    ...orpc.categories.list.queryOptions(),
+    staleTime: 300000, // Cache for 5 minutes
+  });
+
+  // Fetch categories for selected platform
+  const {
+    data: selectedPlatformCategories = [],
+    isLoading: selectedCategoriesLoading,
+  } = useQuery({
+    ...orpc.categories.byPlatform.queryOptions({
+      input: { platformId: filterPlatform },
+    }),
+    enabled: filterPlatform !== "all" && !!filterPlatform,
+    staleTime: 300000, // Cache for 5 minutes
+  });
+
+  // Fetch platforms
+  const {
+    data: platforms = [],
+    isLoading: platformsLoading,
+    error: platformsError,
+  } = useQuery({
+    ...orpc.platforms.list.queryOptions(),
+    staleTime: 300000, // Cache for 5 minutes
+  });
+
+  // Get available categories based on selected platform
+  const availableCategories = React.useMemo(() => {
+    if (filterPlatform === "all" || !filterPlatform) {
+      return allCategories.filter((cat) => cat.id !== "all");
+    }
+    return selectedPlatformCategories.filter((cat) => cat.id !== "all");
+  }, [filterPlatform, allCategories, selectedPlatformCategories]);
+
+  // Reset category when platform changes
+  React.useEffect(() => {
+    setFilterCategory("all");
+  }, [filterPlatform]);
+
+  // Delete timer effect
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isDeleteDialogOpen && deleteTimer > 0) {
+      interval = setInterval(() => {
+        setDeleteTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isDeleteDialogOpen, deleteTimer]);
 
   // Filter and sort products
   const filteredAndSortedProducts = React.useMemo(() => {
@@ -220,9 +284,9 @@ export default function DeveloperProductsDashboard() {
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPlatform =
-        filterPlatform === "all" || product.platformId === filterPlatform;
+        filterPlatform === "all" || product.platform === filterPlatform;
       const matchesCategory =
-        filterCategory === "all" || product.categoryId === filterCategory;
+        filterCategory === "all" || product.category === filterCategory;
 
       return matchesSearch && matchesPlatform && matchesCategory;
     });
@@ -233,8 +297,8 @@ export default function DeveloperProductsDashboard() {
       let bVal: any = b[sortField];
 
       if (sortField === "price") {
-        aVal = parseFloat(aVal);
-        bVal = parseFloat(bVal);
+        aVal = a.price;
+        bVal = b.price;
       } else if (sortField === "createdAt") {
         aVal = new Date(aVal);
         bVal = new Date(bVal);
@@ -273,28 +337,20 @@ export default function DeveloperProductsDashboard() {
     );
   };
 
-  const handleDeleteProduct = async (productId: number) => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    setProducts(products.filter((p) => p.id !== productId));
-    setIsLoading(false);
+  const handleDeleteProduct = (productId: string) => {
+    setDeleteProductId(productId);
+    setDeleteTimer(5);
+    setIsDeleteDialogOpen(true);
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedProducts.length === 0) return;
-
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    setProducts(products.filter((p) => !selectedProducts.includes(p.id)));
-    setSelectedProducts([]);
-    setIsLoading(false);
+    setDeleteProductIds(selectedProducts);
+    setDeleteTimer(5);
+    setIsDeleteDialogOpen(true);
   };
 
-  const toggleProductSelection = (productId: number) => {
+  const toggleProductSelection = (productId: string) => {
     setSelectedProducts((prev) =>
       prev.includes(productId)
         ? prev.filter((id) => id !== productId)
@@ -312,7 +368,7 @@ export default function DeveloperProductsDashboard() {
 
   // Calculate stats
   const totalRevenue = products.reduce(
-    (sum, product) => sum + parseFloat(product.price) * product.sold,
+    (sum, product) => sum + product.price * product.sold,
     0
   );
   const totalSold = products.reduce((sum, product) => sum + product.sold, 0);
@@ -321,6 +377,31 @@ export default function DeveloperProductsDashboard() {
       ? products.reduce((sum, product) => sum + product.rating, 0) /
         products.length
       : 0;
+
+  // Show loading overlay if any data is loading
+  const isAnyLoading = productsLoading || allCategoriesLoading || platformsLoading;
+
+  // Show error state
+  if (productsError || allCategoriesError || platformsError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto p-6">
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <AlertCircle className="size-8 text-destructive mb-3" />
+            <h3 className="text-lg font-semibold">Failed to load data</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {productsError && "Failed to load products"}
+              {allCategoriesError && "Failed to load categories"}
+              {platformsError && "Failed to load platforms"}
+            </p>
+            <Button onClick={() => window.location.reload()} variant="outline">
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -439,12 +520,15 @@ export default function DeveloperProductsDashboard() {
                   <Button
                     variant="outline"
                     className="w-full md:w-48 justify-start rounded-xl"
+                    disabled={platformsLoading}
                   >
                     <Filter className="h-4 w-4 mr-2" />
-                    {filterPlatform === "all"
+                    {platformsLoading
+                      ? "Loading..."
+                      : filterPlatform === "all"
                       ? "All Platforms"
-                      : mockPlatforms.find((p) => p.id === filterPlatform)
-                          ?.name || "Select Platform"}
+                      : platforms.find((p) => p.id === filterPlatform)?.name ||
+                        "Select Platform"}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-48 rounded-xl">
@@ -460,20 +544,22 @@ export default function DeveloperProductsDashboard() {
                     All Platforms
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  {mockPlatforms.map((platform) => (
-                    <DropdownMenuItem
-                      key={platform.id}
-                      onClick={() => setFilterPlatform(platform.id)}
-                      className={
-                        filterPlatform === platform.id ? "bg-accent" : ""
-                      }
-                    >
-                      {filterPlatform === platform.id && (
-                        <Check className="h-4 w-4 mr-2" />
-                      )}
-                      {platform.name}
-                    </DropdownMenuItem>
-                  ))}
+                  {platforms
+                    .filter((platform) => platform.id !== "all")
+                    .map((platform) => (
+                      <DropdownMenuItem
+                        key={platform.id}
+                        onClick={() => setFilterPlatform(platform.id)}
+                        className={
+                          filterPlatform === platform.id ? "bg-accent" : ""
+                        }
+                      >
+                        {filterPlatform === platform.id && (
+                          <Check className="h-4 w-4 mr-2" />
+                        )}
+                        {platform.name}
+                      </DropdownMenuItem>
+                    ))}
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -482,11 +568,20 @@ export default function DeveloperProductsDashboard() {
                   <Button
                     variant="outline"
                     className="w-full md:w-48 justify-start rounded-xl"
+                    disabled={
+                      allCategoriesLoading ||
+                      selectedCategoriesLoading ||
+                      filterPlatform === "all"
+                    }
                   >
                     <Filter className="h-4 w-4 mr-2" />
-                    {filterCategory === "all"
+                    {allCategoriesLoading || selectedCategoriesLoading
+                      ? "Loading..."
+                      : filterPlatform === "all"
+                      ? "Select a platform "
+                      : filterCategory === "all"
                       ? "All Categories"
-                      : mockCategories.find((c) => c.id === filterCategory)
+                      : availableCategories.find((c) => c.id === filterCategory)
                           ?.name || "Select Category"}
                   </Button>
                 </DropdownMenuTrigger>
@@ -496,6 +591,7 @@ export default function DeveloperProductsDashboard() {
                   <DropdownMenuItem
                     onClick={() => setFilterCategory("all")}
                     className={filterCategory === "all" ? "bg-accent" : ""}
+                    disabled={filterPlatform === "all"}
                   >
                     {filterCategory === "all" && (
                       <Check className="h-4 w-4 mr-2" />
@@ -503,7 +599,7 @@ export default function DeveloperProductsDashboard() {
                     All Categories
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  {mockCategories.map((category) => (
+                  {availableCategories.map((category) => (
                     <DropdownMenuItem
                       key={category.id}
                       onClick={() => setFilterCategory(category.id)}
@@ -524,14 +620,14 @@ export default function DeveloperProductsDashboard() {
                 <Button
                   variant="destructive"
                   onClick={handleBulkDelete}
-                  disabled={isLoading}
+                  disabled={productsLoading}
                 >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  {productsLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-4 w-4 " />
                   )}
-                  Delete ({selectedProducts.length})
+                  Delete {selectedProducts.length} items
                 </Button>
               )}
             </div>
@@ -596,152 +692,235 @@ export default function DeveloperProductsDashboard() {
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {filteredAndSortedProducts.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedProducts.includes(product.id)}
-                        onCheckedChange={() =>
-                          toggleProductSelection(product.id)
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center overflow-hidden">
-                          {product.image ? (
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium">{product.name}</p>
-                          <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                            {product.description}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium">${product.price}</span>
-                        {product.discount > 0 && (
-                          <>
-                            <span className="text-sm text-muted-foreground line-through">
-                              ${product.originalPrice}
-                            </span>
-                            <Badge variant="secondary" className="text-xs">
-                              -{product.discount}%
-                            </Badge>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-1">
-                        <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
-                        <span className="font-medium">{product.rating}</span>
-                        <span className="text-sm text-muted-foreground">
-                          ({product.reviewCount})
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="font-medium">
-                        {product.sold.toLocaleString()}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {product.isFeatured && (
-                          <Badge variant="default">Featured</Badge>
-                        )}
-                        {product.isNew && (
-                          <Badge variant="secondary">New</Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(product.createdAt).toLocaleDateString(
-                          "en-US"
-                        )}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="rounded-xl"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="rounded-xl">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              router.push(
-                                `/dashboard/products/create?id={product.id}`
-                              )
-                            }
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => handleDeleteProduct(product.id)}
-                            disabled={isLoading}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
+               <TableBody>
+                 {productsLoading ? (
+                   // Show skeleton rows while loading/refetching
+                   Array.from({ length: 5 }).map((_, index) => (
+                     <TableRow key={`skeleton-${index}`}>
+                       <TableCell>
+                         <Skeleton className="h-4 w-4" />
+                       </TableCell>
+                       <TableCell>
+                         <div className="flex items-center space-x-3">
+                           <Skeleton className="h-10 w-10 rounded-xl" />
+                           <div className="space-y-2">
+                             <Skeleton className="h-4 w-32" />
+                             <Skeleton className="h-3 w-48" />
+                           </div>
+                         </div>
+                       </TableCell>
+                       <TableCell>
+                         <Skeleton className="h-4 w-16" />
+                       </TableCell>
+                       <TableCell>
+                         <Skeleton className="h-4 w-12" />
+                       </TableCell>
+                       <TableCell>
+                         <Skeleton className="h-4 w-14" />
+                       </TableCell>
+                       <TableCell>
+                         <Skeleton className="h-5 w-16" />
+                       </TableCell>
+                       <TableCell>
+                         <Skeleton className="h-4 w-20" />
+                       </TableCell>
+                       <TableCell>
+                         <Skeleton className="h-8 w-8 rounded" />
+                       </TableCell>
+                     </TableRow>
+                   ))
+                 ) : (
+                   filteredAndSortedProducts.map((product) => (
+                     <TableRow key={product.id}>
+                       <TableCell>
+                         <Checkbox
+                           checked={selectedProducts.includes(product.id)}
+                           onCheckedChange={() =>
+                             toggleProductSelection(product.id)
+                           }
+                         />
+                       </TableCell>
+                       <TableCell>
+                         <div className="flex items-center space-x-3">
+                           <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center overflow-hidden">
+                             {product.image ? (
+                               <img
+                                 src={product.image}
+                                 alt={product.name}
+                                 className="h-full w-full object-cover"
+                               />
+                             ) : (
+                               <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                             )}
+                           </div>
+                           <div>
+                             <p className="font-medium">{product.name}</p>
+                             <p className="text-sm text-muted-foreground truncate max-w-[200px]">
+                               {product.description}
+                             </p>
+                           </div>
+                         </div>
+                       </TableCell>
+                       <TableCell>
+                         <div className="flex items-center gap-1">
+                           <span className="font-medium">
+                             ${product.price.toFixed(2)}
+                           </span>
+                           {product.discount > 0 && (
+                             <>
+                               <span className="text-sm text-muted-foreground line-through">
+                                 ${product.originalPrice.toFixed(2)}
+                               </span>
+                               <Badge variant="secondary" className="text-xs">
+                                 -{product.discount}%
+                               </Badge>
+                             </>
+                           )}
+                         </div>
+                       </TableCell>
+                       <TableCell>
+                         <div className="flex items-center space-x-1">
+                           <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                           <span className="font-medium">{product.rating}</span>
+                           <span className="text-sm text-muted-foreground">
+                             ({product.reviewCount})
+                           </span>
+                         </div>
+                       </TableCell>
+                       <TableCell>
+                         <span className="font-medium">
+                           {product.sold.toLocaleString()}
+                         </span>
+                       </TableCell>
+                       <TableCell>
+                         <div className="flex gap-1">
+                           {product.isFeatured && (
+                             <Badge variant="default">Featured</Badge>
+                           )}
+                           {product.isNew && (
+                             <Badge variant="secondary">New</Badge>
+                           )}
+                         </div>
+                       </TableCell>
+                       <TableCell>
+                         <span className="text-sm text-muted-foreground">
+                           {new Date(product.createdAt).toLocaleDateString(
+                             "en-US"
+                           )}
+                         </span>
+                       </TableCell>
+                       <TableCell>
+                         <DropdownMenu>
+                           <DropdownMenuTrigger asChild>
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               className="rounded-xl"
+                             >
+                               <MoreHorizontal className="h-4 w-4" />
+                             </Button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align="end" className="rounded-xl">
+                             <DropdownMenuItem
+                               onClick={() =>
+                                 router.push(
+                                   `/dashboard/products/create?id={product.id}`
+                                 )
+                               }
+                             >
+                               <Edit className="h-4 w-4 mr-2" />
+                               Edit
+                             </DropdownMenuItem>
+                             <DropdownMenuItem>
+                               <Eye className="h-4 w-4 mr-2" />
+                               View
+                             </DropdownMenuItem>
+                             <DropdownMenuItem
+                               className="text-destructive"
+                               onClick={() => handleDeleteProduct(product.id)}
+                               disabled={productsLoading}
+                             >
+                               <Trash2 className="h-4 w-4 mr-2" />
+                               Delete
+                             </DropdownMenuItem>
+                           </DropdownMenuContent>
+                         </DropdownMenu>
+                       </TableCell>
+                     </TableRow>
+                   ))
+                 )}
+               </TableBody>
             </Table>
 
-            {filteredAndSortedProducts.length === 0 && (
-              <div className="text-center py-12">
-                <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium">No products found</h3>
-                <p className="text-muted-foreground mb-4">
-                  {searchTerm ||
-                  filterPlatform !== "all" ||
-                  filterCategory !== "all"
-                    ? "Try adjusting your search or filters"
-                    : "Create your first product to get started"}
-                </p>
-                {!searchTerm &&
-                  filterPlatform === "all" &&
-                  filterCategory === "all" && (
-                    <Button
-                      onClick={() => router.push("/dashboard/products/create")}
-                      className="gap-2 rounded-xl"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Product
-                    </Button>
-                  )}
-              </div>
-            )}
+             {filteredAndSortedProducts.length === 0 && !productsLoading && (
+               <div className="text-center py-12">
+                 <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                 <h3 className="text-lg font-medium">No products found</h3>
+                 <p className="text-muted-foreground mb-4">
+                   {searchTerm ||
+                   filterPlatform !== "all" ||
+                   filterCategory !== "all"
+                     ? "Try adjusting your search or filters"
+                     : "Create your first product to get started"}
+                 </p>
+                 {!searchTerm &&
+                   filterPlatform === "all" &&
+                   filterCategory === "all" && (
+                     <Button
+                       onClick={() => router.push("/dashboard/products/create")}
+                       className="gap-2 rounded-xl"
+                     >
+                       <Plus className="h-4 w-4" />
+                       Add Product
+                     </Button>
+                   )}
+               </div>
+             )}
           </CardContent>
         </Card>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Delete {deleteProductId ? "Product" : `${deleteProductIds.length} Products`}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete {deleteProductId ? "this product" : `these ${deleteProductIds.length} products`}? This action cannot be undone.
+                {deleteProductId ? "The product" : "The products"} will be soft deleted and can be restored later.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                onClick={() => {
+                  setIsDeleteDialogOpen(false);
+                  setDeleteTimer(5);
+                  setDeleteProductId(null);
+                  setDeleteProductIds([]);
+                }}
+              >
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (deleteProductId) {
+                    deleteProductMutation.mutate(deleteProductId);
+                  } else if (deleteProductIds.length > 0) {
+                    bulkDeleteMutation.mutate(deleteProductIds);
+                  }
+                }}
+                disabled={deleteTimer > 0 || deleteProductMutation.isPending || bulkDeleteMutation.isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {(deleteProductMutation.isPending || bulkDeleteMutation.isPending) ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                Delete {deleteTimer > 0 ? `(${deleteTimer}s)` : ""}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

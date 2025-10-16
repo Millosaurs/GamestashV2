@@ -38,10 +38,8 @@ export default function ProductDetailPage() {
   const params = useParams();
   const slugOrId = params.slugOrId as string;
 
-  // Check if slugOrId is a numeric ID or a slug
-  const isNumericId = /^\d+$/.test(slugOrId);
-  const productId = isNumericId ? slugOrId : undefined;
-  const productSlug = !isNumericId ? slugOrId : undefined;
+  // Treat route param as UUID id
+  const productId = slugOrId;
 
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -55,7 +53,6 @@ export default function ProductDetailPage() {
     ...orpc.products.get.queryOptions({
       input: {
         id: productId,
-        slug: productSlug,
       },
     }),
     staleTime: 15000,
@@ -404,9 +401,6 @@ export default function ProductDetailPage() {
                       </div>
                     </div>
                   </div>
-
-
-
 
                   {/* Tags */}
                   {product.tags && product.tags.length > 0 && (

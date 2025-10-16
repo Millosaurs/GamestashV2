@@ -6,7 +6,8 @@ import {
   text,
   timestamp,
   index,
-  boolean, // ensure lowercase boolean is imported if you need it
+  boolean,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { products } from "./products";
 
@@ -14,7 +15,7 @@ export const reviews = pgTable(
   "reviews",
   {
     id: serial("id").primaryKey(),
-    productId: integer("product_id")
+    productId: uuid("product_id")
       .references(() => products.id, { onDelete: "cascade" })
       .notNull(),
     rating: integer("rating").notNull(), 

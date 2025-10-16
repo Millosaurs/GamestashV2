@@ -36,8 +36,16 @@ const DiscordIcon = ({ className }: { className?: string }) => (
 
 export default function AuthPage() {
   const [loading, setLoading] = React.useState(false);
-  const route = "dashboard";
-  const callbackURL = `${process.env.NEXT_PUBLIC_CLIENT_URL}/${route}`;
+  const searchParams =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search)
+      : null;
+  const callbackPath = searchParams?.get("callback") || "/dashboard";
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const baseClient = process.env.NEXT_PUBLIC_CLIENT_URL || origin;
+  const callbackURL = `${baseClient}${
+    callbackPath.startsWith("/") ? "" : "/"
+  }${callbackPath}`;
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left Panel - Branding */}

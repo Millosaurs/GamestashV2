@@ -1,7 +1,6 @@
-// products.ts - Complete version with all procedures
-// NOTE: Add this field to your products schema:
-// content: text("content"), // Rich text content from editor
+// products.ts
 
+import { randomUUID } from "crypto";
 import { db } from "../../db";
 import { products } from "../../db/schema/products";
 import { platforms } from "../../db/schema/platforms";
@@ -18,6 +17,8 @@ import {
   desc,
   asc,
   or,
+  ne,
+  isNull,
 } from "drizzle-orm";
 import { z } from "zod";
 
@@ -44,6 +45,375 @@ const ProductFilterSchema = z.object({
   limit: z.number().min(1).max(100).optional().default(50),
   offset: z.number().min(0).optional().default(0),
 });
+
+const CreateProductSchema = z.object({
+  name: z.string().min(1, "Product name is required"),
+  slug: z.string().min(1, "Slug is required"),
+  description: z.string().min(1, "Description is required"),
+  content: z.string().optional(),
+  price: z.string().min(0, "Price must be positive"),
+  originalPrice: z.string().min(0, "Original price must be positive"),
+  discount: z.number().min(0).max(100).optional().default(0),
+  platformId: z.string().min(1, "Platform is required"),
+  categoryId: z.string().min(1, "Category is required"),
+  author: z.string().min(1, "Author name is required"),
+  authorId: z.string().min(1, "Author ID is required"),
+  tags: z.array(z.string()).optional().default([]),
+  isFeatured: z.boolean().optional().default(false),
+  isNew: z.boolean().optional().default(false),
+});
+
+// Update product schema (all fields optional except id)
+const UpdateProductSchema = z.object({
+  id: z.string().min(1, "Product ID is required"),
+  name: z.string().min(1).optional(),
+  slug: z.string().min(1).optional(),
+  description: z.string().min(1).optional(),
+  content: z.string().optional(),
+  price: z.string().optional(),
+  originalPrice: z.string().optional(),
+  discount: z.number().min(0).max(100).optional(),
+  platformId: z.string().optional(),
+  categoryId: z.string().optional(),
+  author: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  isFeatured: z.boolean().optional(),
+  isNew: z.boolean().optional(),
+});
+
+// Create new product
+export const createProduct = os
+  .input(CreateProductSchema)
+  .handler(async (opt) => {
+    const input = opt.input;
+
+    try {
+      // Hardcoded placeholder image
+      const image = "/placeholder.svg";
+
+      // Insert the product
+      const result = await db
+        .insert(products)
+        .values({
+          id: randomUUID(),
+          name: input.name,
+          slug: input.slug,
+          description: input.description,
+          content: input.content || "",
+          price: input.price,
+          originalPrice: input.originalPrice,
+          discount: input.discount,
+          platformId: input.platformId,
+          categoryId: input.categoryId,
+          image: image,
+          author: input.author,
+          authorId: input.authorId,
+          tags: input.tags,
+          isFeatured: input.isFeatured,
+          isNew: input.isNew,
+          rating: 0,
+          reviewCount: 0,
+          sold: 0,
+        })
+        .returning();
+
+      console.log("Product created successfully:", result[0].id);
+
+      return {
+        success: true,
+        product: result[0],
+        message: "Product created successfully",
+      };
+    } catch (error) {
+      console.error("Error creating product:", error);
+      throw new Error("Failed to create product");
+    }
+  });
+
+// Update existing product
+export const updateProduct = os
+  .input(UpdateProductSchema)
+  .handler(async (opt) => {
+    const { id, ...updateData } = opt.input;
+
+    try {
+      // Check if product exists and is not deleted
+      const existingProduct = await db
+        .select()
+        .from(products)
+        .where(and(eq(products.id, id), isNull(products.deletedAt)))
+        .limit(1);
+
+      if (existingProduct.length === 0) {
+        throw new Error("Product not found or has been deleted");
+      }
+
+      // Build update object with only provided fields
+      const updateFields: any = {
+        ...updateData,
+        updatedAt: new Date(),
+      };
+
+      // Remove undefined fields
+      Object.keys(updateFields).forEach((key) => {
+        if (updateFields[key] === undefined) {
+          delete updateFields[key];
+        }
+      });
+
+      // Update the product
+      const result = await db
+        .update(products)
+        .set(updateFields)
+        .where(eq(products.id, id))
+        .returning();
+
+      console.log("Product updated successfully:", result[0].id);
+
+      return {
+        success: true,
+        product: result[0],
+        message: "Product updated successfully",
+      };
+    } catch (error) {
+      console.error("Error updating product:", error);
+      if (error instanceof Error && error.message.includes("not found")) {
+        throw error;
+      }
+      throw new Error("Failed to update product");
+    }
+  });
+
+// Soft delete product
+export const deleteProduct = os
+  .input(
+    z.object({
+      id: z.string().min(1, "Product ID is required"),
+    })
+  )
+  .handler(async (opt) => {
+    const { id } = opt.input;
+
+    try {
+      // Check if product exists and is not already deleted
+      const existingProduct = await db
+        .select()
+        .from(products)
+        .where(and(eq(products.id, id), isNull(products.deletedAt)))
+        .limit(1);
+
+      if (existingProduct.length === 0) {
+        throw new Error("Product not found or already deleted");
+      }
+
+      // Soft delete by setting deletedAt timestamp
+      const result = await db
+        .update(products)
+        .set({
+          deletedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(products.id, id))
+        .returning();
+
+      console.log("Product soft deleted successfully:", result[0].id);
+
+      return {
+        success: true,
+        message: "Product deleted successfully",
+      };
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      if (error instanceof Error && error.message.includes("not found")) {
+        throw error;
+      }
+      throw new Error("Failed to delete product");
+    }
+  });
+
+// Bulk soft delete products
+export const bulkDeleteProducts = os
+  .input(
+    z.object({
+      ids: z.array(z.string()).min(1, "At least one product ID is required"),
+    })
+  )
+  .handler(async (opt) => {
+    const { ids } = opt.input;
+
+    try {
+      // Soft delete multiple products
+      const result = await db
+        .update(products)
+        .set({
+          deletedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(and(inArray(products.id, ids), isNull(products.deletedAt)))
+        .returning();
+
+      console.log(`Bulk deleted ${result.length} products`);
+
+      return {
+        success: true,
+        deletedCount: result.length,
+        message: `${result.length} products deleted successfully`,
+      };
+    } catch (error) {
+      console.error("Error bulk deleting products:", error);
+      throw new Error("Failed to delete products");
+    }
+  });
+
+// Restore soft deleted product
+// export const restoreProduct = os
+//   .input(
+//     z.object({
+//       id: z.string().min(1, "Product ID is required"),
+//     })
+//   )
+//   .handler(async (opt) => {
+//     const { id } = opt.input;
+
+//     try {
+//       // Restore by setting deletedAt to null
+//       const result = await db
+//         .update(products)
+//         .set({
+//           deletedAt: null,
+//           updatedAt: new Date(),
+//         })
+//         .where(eq(products.id, id))
+//         .returning();
+
+//       if (result.length === 0) {
+//         throw new Error("Product not found");
+//       }
+
+//       console.log("Product restored successfully:", result[0].id);
+
+//       return {
+//         success: true,
+//         product: result[0],
+//         message: "Product restored successfully",
+//       };
+//     } catch (error) {
+//       console.error("Error restoring product:", error);
+//       throw new Error("Failed to restore product");
+//     }
+//   });
+
+// Get user's products (only non-deleted)
+export const getUserProducts = os
+  .input(
+    z.object({
+      userId: z.string().min(1, "User ID is required"),
+      limit: z.number().min(1).max(100).optional().default(50),
+      offset: z.number().min(0).optional().default(0),
+      sortBy: z
+        .enum(["newest", "oldest", "price-low", "price-high", "rating"])
+        .optional()
+        .default("newest"),
+    })
+  )
+  .handler(async (opt) => {
+    const { userId, limit, offset, sortBy } = opt.input;
+
+    try {
+      const baseQuery = db
+        .select({
+          id: products.id,
+          slug: products.slug,
+          name: products.name,
+          description: products.description,
+          content: products.content,
+          price: products.price,
+          originalPrice: products.originalPrice,
+          discount: products.discount,
+          platformId: products.platformId,
+          categoryId: products.categoryId,
+          rating: products.rating,
+          reviewCount: products.reviewCount,
+          sold: products.sold,
+          image: products.image,
+          author: products.author,
+          authorId: products.authorId,
+          isFeatured: products.isFeatured,
+          isNew: products.isNew,
+          tags: products.tags,
+          createdAt: products.createdAt,
+          updatedAt: products.updatedAt,
+          platformName: platforms.name,
+          categoryName: categories.name,
+        })
+        .from(products)
+        .leftJoin(platforms, eq(products.platformId, platforms.id))
+        .leftJoin(categories, eq(products.categoryId, categories.id))
+        .where(and(eq(products.authorId, userId), isNull(products.deletedAt)));
+
+      // Apply sorting
+      let queryWithSort;
+      switch (sortBy) {
+        case "newest":
+          queryWithSort = baseQuery.orderBy(desc(products.createdAt));
+          break;
+        case "oldest":
+          queryWithSort = baseQuery.orderBy(asc(products.createdAt));
+          break;
+        case "price-low":
+          queryWithSort = baseQuery.orderBy(
+            asc(sql`CAST(${products.price} AS NUMERIC)`)
+          );
+          break;
+        case "price-high":
+          queryWithSort = baseQuery.orderBy(
+            desc(sql`CAST(${products.price} AS NUMERIC)`)
+          );
+          break;
+        case "rating":
+          queryWithSort = baseQuery.orderBy(desc(products.rating));
+          break;
+        default:
+          queryWithSort = baseQuery.orderBy(desc(products.createdAt));
+      }
+
+      const result = await queryWithSort.limit(limit).offset(offset);
+
+      console.log(`Found ${result.length} products for user ${userId}`);
+
+      // Transform results
+      const transformedProducts = result.map((product) => ({
+        id: product.id.toString(),
+        slug: product.slug,
+        name: product.name,
+        description: product.description,
+        content: product.content,
+        price: parseFloat(product.price),
+        originalPrice: parseFloat(product.originalPrice),
+        platform: product.platformId,
+        platformName: product.platformName,
+        category: product.categoryId,
+        categoryName: product.categoryName,
+        rating: product.rating || 0,
+        reviewCount: product.reviewCount || 0,
+        sold: product.sold || 0,
+        image: product.image || "/placeholder.svg",
+        author: product.author,
+        authorId: product.authorId ?? null,
+        tags: Array.isArray(product.tags) ? (product.tags as string[]) : [],
+        isFeatured: product.isFeatured || false,
+        isNew: product.isNew || false,
+        discount: product.discount || 0,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+      }));
+
+      return transformedProducts;
+    } catch (error) {
+      console.error("Error fetching user products:", error);
+      throw new Error("Failed to fetch user products");
+    }
+  });
 
 // List products with filters
 export const listProducts = os
@@ -120,6 +490,7 @@ export const listProducts = os
           sold: products.sold,
           image: products.image,
           author: products.author,
+          authorId: products.authorId,
           isFeatured: products.isFeatured,
           isNew: products.isNew,
           tags: products.tags,
@@ -227,6 +598,7 @@ export const listProducts = os
         sold: product.sold || 0,
         image: product.image || "/placeholder.svg",
         author: product.author,
+        authorId: product.authorId ?? null,
         tags: Array.isArray(product.tags) ? (product.tags as string[]) : [],
         isFeatured: product.isFeatured || false,
         isNew: product.isNew || false,
@@ -242,22 +614,15 @@ export const listProducts = os
     }
   });
 
-// Get single product by ID or slug
+// Get single product by ID
 export const getProduct = os
   .input(
     z.object({
-      id: z.string().optional(),
-      slug: z.string().optional(),
+      id: z.string(),
     })
   )
   .handler(async (opt) => {
-    const { id, slug } = opt.input;
-
-    if (!id && !slug) {
-      throw new Error("Either id or slug must be provided");
-    }
-
-    console.log("Fetching single product:", { id, slug });
+    const { id } = opt.input;
 
     try {
       const baseQuery = db
@@ -277,6 +642,7 @@ export const getProduct = os
           sold: products.sold,
           image: products.image,
           author: products.author,
+          authorId: products.authorId,
           isFeatured: products.isFeatured,
           isNew: products.isNew,
           tags: products.tags,
@@ -289,20 +655,14 @@ export const getProduct = os
         .leftJoin(platforms, eq(products.platformId, platforms.id))
         .leftJoin(categories, eq(products.categoryId, categories.id));
 
-      // Build the where condition based on id or slug
-      const condition = id
-        ? eq(products.id, parseInt(id))
-        : eq(products.slug, slug!);
-
-      const result = await baseQuery.where(condition).limit(1);
+      // Build the where condition based on id (UUID string)
+      const result = await baseQuery.where(eq(products.id, id)).limit(1);
 
       if (result.length === 0) {
         throw new Error("Product not found");
       }
 
       const product = result[0];
-
-      console.log("Product found:", product.name);
 
       // Transform to match frontend interface
       return {
@@ -322,6 +682,7 @@ export const getProduct = os
         sold: product.sold || 0,
         image: product.image || "/placeholder.svg",
         author: product.author,
+        authorId: product.authorId ?? null,
         tags: Array.isArray(product.tags) ? (product.tags as string[]) : [],
         isFeatured: product.isFeatured || false,
         isNew: product.isNew || false,
@@ -351,12 +712,6 @@ export const getRelatedProducts = os
   .handler(async (opt) => {
     const { categoryId, platformId, excludeId, limit } = opt.input;
 
-    console.log("Fetching related products:", {
-      categoryId,
-      platformId,
-      excludeId,
-    });
-
     try {
       const baseQuery = db
         .select({
@@ -375,6 +730,7 @@ export const getRelatedProducts = os
           sold: products.sold,
           image: products.image,
           author: products.author,
+          authorId: products.authorId,
           isFeatured: products.isFeatured,
           isNew: products.isNew,
           tags: products.tags,
@@ -395,9 +751,9 @@ export const getRelatedProducts = os
         ),
       ];
 
-      // Exclude current product if provided
+      // Exclude current product if provided (UUID string)
       if (excludeId) {
-        conditions.push(sql`${products.id} != ${parseInt(excludeId)}`);
+        conditions.push(ne(products.id, excludeId));
       }
 
       const result = await baseQuery
@@ -429,6 +785,7 @@ export const getRelatedProducts = os
         sold: product.sold || 0,
         image: product.image || "/placeholder.svg",
         author: product.author,
+        authorId: product.authorId ?? null,
         tags: Array.isArray(product.tags) ? (product.tags as string[]) : [],
         isFeatured: product.isFeatured || false,
         isNew: product.isNew || false,
@@ -506,11 +863,17 @@ export const getPriceRange = os.handler(async () => {
   }
 });
 
+
 // Export all procedures
 export const productsRoute = {
   list: listProducts,
   get: getProduct,
+  create: createProduct,
+  update: updateProduct,
+  delete: deleteProduct,
+  bulkDelete: bulkDeleteProducts,
   related: getRelatedProducts,
   tags: getProductTags,
   priceRange: getPriceRange,
+  getUserProducts: getUserProducts,
 };
