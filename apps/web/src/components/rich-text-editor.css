@@ -1,0 +1,74 @@
+/* Rich Text Editor Custom Styles */
+
+/* Image wrapper styling */
+.ProseMirror .image-wrapper-container {
+  position: relative;
+  display: inline-block;
+  margin: 1rem 0;
+  max-width: 100%;
+}
+
+.ProseMirror .image-wrapper-container img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  display: block;
+}
+
+/* Delete button hover effect */
+.ProseMirror .delete-image-btn:hover {
+  background-color: hsl(var(--secondary) / 0.8) !important;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+}
+
+/* Focus state for images */
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 3px solid hsl(var(--primary));
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Animation for image insertion */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ProseMirror .image-wrapper-container {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Responsive images */
+@media (max-width: 640px) {
+  .ProseMirror .image-wrapper-container {
+    margin: 0.75rem 0;
+  }
+
+  .ProseMirror .delete-image-btn {
+    opacity: 1 !important; /* Always show on mobile */
+  }
+}
+
+/* Hover overlay effect */
+.ProseMirror .image-wrapper-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0);
+  transition: background-color 0.2s ease-in-out;
+  border-radius: 0.5rem;
+  pointer-events: none;
+}
+
+.ProseMirror .image-wrapper-container:hover::before {
+  background-color: rgba(0, 0, 0, 0.02);
+}

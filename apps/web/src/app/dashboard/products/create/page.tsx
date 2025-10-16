@@ -443,6 +443,25 @@ function ProductFormContent() {
                       )}
                     </div>
 
+                    <div>
+                      <Label htmlFor="image">
+                        Product Image <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="mt-1.5">
+                        <ImageUpload
+                          value={formData.image}
+                          onChange={(url) => handleInputChange("image", url)}
+                          disabled={isLoading}
+                        />
+                      </div>
+                      {errors.image && (
+                        <p className="text-sm text-destructive mt-1.5 flex items-center gap-1">
+                          <AlertCircle className="h-3.5 w-3.5" />
+                          {errors.image}
+                        </p>
+                      )}
+                    </div>
+
                     {/* Short Description */}
                     <div>
                       <Label htmlFor="description">
@@ -473,6 +492,8 @@ function ProductFormContent() {
                       )}
                     </div>
 
+
+
                     {/* Product Content - Rich Text Editor */}
                     <div>
                       <Label htmlFor="content">
@@ -497,28 +518,11 @@ function ProductFormContent() {
                       )}
                     </div>
 
-                    {/* Image Upload */}
-                    <div>
-                      <Label htmlFor="image">
-                        Product Image <span className="text-destructive">*</span>
-                      </Label>
-                      <div className="mt-1.5">
-                        <ImageUpload
-                          value={formData.image}
-                          onChange={(url) => handleInputChange("image", url)}
-                          disabled={isLoading}
-                        />
-                      </div>
-                      {errors.image && (
-                        <p className="text-sm text-destructive mt-1.5 flex items-center gap-1">
-                          <AlertCircle className="h-3.5 w-3.5" />
-                          {errors.image}
-                        </p>
-                      )}
-                    </div>
+
+
 
                     {/* File Upload */}
-                    <div>
+                    {/*<div>
                       <Label htmlFor="files">
                         Product Files (Assets/Downloads)
                       </Label>
@@ -533,7 +537,7 @@ function ProductFormContent() {
                           maxFiles={5}
                         />
                       </div>
-                    </div>
+                    </div>*/}
                   </CardContent>
                 </Card>
 

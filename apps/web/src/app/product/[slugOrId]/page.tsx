@@ -229,12 +229,6 @@ export default function ProductDetailPage() {
                   className="w-full h-full object-cover rounded-xl"
                 />
 
-                {/* Play Button Overlay */}
-                <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
-                  <Button size="lg" className="rounded-full">
-                    <Play className="size-6 fill-current" />
-                  </Button>
-                </div>
 
                 {/* Badges Overlay */}
                 <div className="absolute top-6 left-6 flex gap-2">

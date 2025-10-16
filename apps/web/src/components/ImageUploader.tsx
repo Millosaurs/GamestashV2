@@ -44,18 +44,13 @@ export default function ImageUpload({
         fileType: file.type,
       };
 
-      toast.info("Compressing image...");
       const compressedFile = await imageCompression(file, options);
-
-      const compressionRatio = ((1 - compressedFile.size / file.size) * 100).toFixed(1);
-      toast.success(`Image compressed by ${compressionRatio}%`, {
-        description: `${(file.size / (1024 * 1024)).toFixed(2)}MB → ${(compressedFile.size / (1024 * 1024)).toFixed(2)}MB`,
-      });
 
       return compressedFile;
     } catch (error) {
       toast.error("Failed to compress image", {
         description: "Uploading original file instead",
+        id: "upload",
       });
       return file;
     }
@@ -86,12 +81,24 @@ export default function ImageUpload({
 
     try {
       setIsUploading(true);
+      const toastId = "upload";
 
-      // Compress image before upload
+      // Step 1: Compress image
+      toast.loading("Compressing image...", { id: toastId });
+      const originalSize = file.size;
       const compressedFile = await compressImage(file);
+      const compressedSize = compressedFile.size;
+      const compressionRatio = ((1 - compressedSize / originalSize) * 100).toFixed(0);
 
-      // Step 1: Get presigned URL from server
-      toast.loading("Requesting upload URL...", { id: "upload" });
+      // Show compression result
+      toast.loading(
+        `Compressed: ${(originalSize / (1024 * 1024)).toFixed(2)}MB → ${(compressedSize / (1024 * 1024)).toFixed(2)}MB (${compressionRatio}% smaller)`,
+        { id: toastId }
+      );
+
+      // Step 2: Get presigned URL from server
+      await new Promise(resolve => setTimeout(resolve, 800)); // Brief pause to show compression result
+      toast.loading("Requesting upload URL...", { id: toastId });
 
       const result = await generateUrlMutation.mutateAsync({
         fileName: compressedFile.name,
@@ -103,8 +110,8 @@ export default function ImageUpload({
         throw new Error("Failed to get upload URL from server");
       }
 
-      // Step 2: Upload directly to S3
-      toast.loading("Uploading to S3...", { id: "upload" });
+      // Step 3: Upload directly to S3
+      toast.loading("Uploading to S3...", { id: toastId });
 
       const uploadResponse = await fetch(result.uploadUrl, {
         method: "PUT",
@@ -124,7 +131,7 @@ export default function ImageUpload({
 
       // Update the value with public URL
       onChange(result.publicUrl);
-      toast.success("Image uploaded successfully!", { id: "upload" });
+      toast.success(`Image uploaded! (${compressionRatio}% smaller)`, { id: toastId });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to upload image";
       setError(errorMessage);
